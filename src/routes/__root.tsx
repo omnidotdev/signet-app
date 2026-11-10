@@ -35,7 +35,13 @@ import type { PropsWithChildren } from "react";
 const fetchSession = createServerFn().handler(async () => {
   const headers = getRequestHeaders();
 
-  return await auth.api.getSession({ headers });
+  // Degrade gracefully: anonymous flows (upload, sign) must render even when
+  // auth is unconfigured or the identity provider is unreachable
+  try {
+    return await auth.api.getSession({ headers });
+  } catch {
+    return null;
+  }
 });
 
 /**

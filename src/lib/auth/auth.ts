@@ -43,7 +43,7 @@ const auth = betterAuth({
   },
   advanced: {
     // use custom cookie prefix to avoid collision with IDP cookies
-    cookiePrefix: "TODO_REPLACE_ME",
+    cookiePrefix: "signet",
     // resolve the real client IP from Cloudflare's `cf-connecting-ip` header so
     // Better Auth rate-limit buckets are keyed per client. without it, getIp
     // sees a multi-hop `x-forwarded-for` behind Cloudflare, resolves to null,
