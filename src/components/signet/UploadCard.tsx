@@ -1,4 +1,5 @@
 import { Button } from "@omnidotdev/thornberry/button";
+import { useRouteContext } from "@tanstack/react-router";
 import { FileSignature, Plus, Stamp, UploadCloud, X } from "lucide-react";
 import { useRef, useState } from "react";
 
@@ -10,6 +11,7 @@ interface SignerInput {
 }
 
 interface SentResult {
+  draft?: boolean;
   manageUrl: string;
   signers: { name: string; signUrl: string }[];
 }
@@ -29,6 +31,9 @@ const emptySigner = (): SignerInput => ({ name: "", email: "" });
  * user can start from either place.
  */
 const UploadCard = ({ onSent }: Props) => {
+  const { auth } = useRouteContext({ strict: false });
+  const me = auth?.user;
+
   const [file, setFile] = useState<File | null>(null);
   const [docName, setDocName] = useState("");
   const [mode, setMode] = useState<Mode>("send");
@@ -37,6 +42,7 @@ const UploadCard = ({ onSent }: Props) => {
   const [sequential, setSequential] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [savingDraft, setSavingDraft] = useState(false);
   const [result, setResult] = useState<SentResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -69,6 +75,24 @@ const UploadCard = ({ onSent }: Props) => {
 
   const namedSigners = signers.filter((s) => s.name.trim());
 
+  // whether the signed-in user is already in the signer list
+  const meAdded = Boolean(
+    me?.email &&
+      signers.some(
+        (s) => s.email.trim().toLowerCase() === me.email?.toLowerCase(),
+      ),
+  );
+  const addMyself = () => {
+    if (!me) return;
+    const row: SignerInput = { name: me.name ?? "", email: me.email ?? "" };
+    // fill the first empty row, else append
+    setSigners((prev) => {
+      const i = prev.findIndex((s) => !s.name.trim() && !s.email.trim());
+      if (i >= 0) return prev.map((s, idx) => (idx === i ? row : s));
+      return [...prev, row];
+    });
+  };
+
   const signMyself = async () => {
     if (!file) return;
     setBusy(true);
@@ -93,9 +117,9 @@ const UploadCard = ({ onSent }: Props) => {
     }
   };
 
-  const send = async () => {
+  const submit = async (draft: boolean) => {
     if (!file || namedSigners.length === 0) return;
-    setBusy(true);
+    draft ? setSavingDraft(true) : setBusy(true);
     setError(null);
     try {
       const fd = new FormData();
@@ -112,6 +136,7 @@ const UploadCard = ({ onSent }: Props) => {
       );
       if (sequential && namedSigners.length > 1)
         fd.set("signingMode", "sequential");
+      if (draft) fd.set("draft", "true");
       const res = await fetch("/api/signet/documents", {
         method: "POST",
         body: fd,
@@ -120,9 +145,14 @@ const UploadCard = ({ onSent }: Props) => {
       setResult((await res.json()) as SentResult);
       onSent?.();
     } catch {
-      setError("Could not send the document. Please try again.");
+      setError(
+        draft
+          ? "Could not save the draft. Please try again."
+          : "Could not send the document. Please try again.",
+      );
     } finally {
       setBusy(false);
+      setSavingDraft(false);
     }
   };
 
@@ -248,6 +278,15 @@ const UploadCard = ({ onSent }: Props) => {
                 >
                   <Plus className="size-4" /> Add another signer
                 </button>
+                {me && !meAdded && (
+                  <button
+                    type="button"
+                    onClick={addMyself}
+                    className="inline-flex items-center gap-1.5 font-medium text-primary text-sm hover:underline"
+                  >
+                    <Plus className="size-4" /> Add myself
+                  </button>
+                )}
                 {namedSigners.length > 1 && (
                   <label className="flex items-center gap-2 text-sm">
                     <input
@@ -273,56 +312,84 @@ const UploadCard = ({ onSent }: Props) => {
 
           {error && <p className="text-destructive text-sm">{error}</p>}
 
-          <Button
-            className="w-full"
-            disabled={
-              busy ||
-              (mode === "send" ? namedSigners.length === 0 : !selfName.trim())
-            }
-            onClick={mode === "send" ? send : signMyself}
-          >
-            {busy
-              ? "Working..."
-              : mode === "send"
-                ? "Send for signature"
-                : "Sign and download"}
-          </Button>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button
+              className="w-full"
+              disabled={
+                busy ||
+                savingDraft ||
+                (mode === "send" ? namedSigners.length === 0 : !selfName.trim())
+              }
+              onClick={mode === "send" ? () => submit(false) : signMyself}
+            >
+              {busy
+                ? "Working..."
+                : mode === "send"
+                  ? "Send for signature"
+                  : "Sign and download"}
+            </Button>
+            {/* drafts are owner-scoped, so only offer them when signed in */}
+            {mode === "send" && me && (
+              <Button
+                variant="outline"
+                className="w-full sm:w-auto"
+                disabled={busy || savingDraft || namedSigners.length === 0}
+                onClick={() => submit(true)}
+              >
+                {savingDraft ? "Saving..." : "Save as draft"}
+              </Button>
+            )}
+          </div>
         </div>
       )}
 
       {result && (
         <div className="mt-5 rounded-xl border border-border bg-muted/40 p-4">
-          <p className="font-medium text-sm">Ready to sign.</p>
-          <p className="mt-1 text-muted-foreground text-xs">
-            Each signer can sign at their link
-            {sequential && result.signers.length > 1
-              ? " (in order; the next is emailed as each finishes)"
-              : ""}
-            . We email anyone you gave an address.
-          </p>
-          <ul className="mt-3 space-y-2">
-            {result.signers.map((s) => (
-              <li key={s.signUrl}>
-                <span className="font-medium text-sm">{s.name}</span>
-                <code className="mt-1 block overflow-x-auto rounded-md bg-background px-3 py-2 text-xs">
-                  {s.signUrl}
-                </code>
-              </li>
-            ))}
-          </ul>
+          {result.draft ? (
+            <>
+              <p className="font-medium text-sm">Saved as a draft.</p>
+              <p className="mt-1 text-muted-foreground text-xs">
+                It is not sent yet. Find it under Documents to send or delete
+                it.
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="font-medium text-sm">Ready to sign.</p>
+              <p className="mt-1 text-muted-foreground text-xs">
+                Each signer can sign at their link
+                {sequential && result.signers.length > 1
+                  ? " (in order; the next is emailed as each finishes)"
+                  : ""}
+                . We email anyone you gave an address.
+              </p>
+              <ul className="mt-3 space-y-2">
+                {result.signers.map((s) => (
+                  <li key={s.signUrl}>
+                    <span className="font-medium text-sm">{s.name}</span>
+                    <code className="mt-1 block overflow-x-auto rounded-md bg-background px-3 py-2 text-xs">
+                      {s.signUrl}
+                    </code>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
           <div className="mt-3 flex items-center gap-4">
-            <a
-              href={result.manageUrl}
-              className="text-primary text-sm underline-offset-4 hover:underline"
-            >
-              Track status
-            </a>
+            {!result.draft && (
+              <a
+                href={result.manageUrl}
+                className="text-primary text-sm underline-offset-4 hover:underline"
+              >
+                Track status
+              </a>
+            )}
             <button
               type="button"
               onClick={reset}
               className="text-muted-foreground text-sm underline-offset-4 hover:underline"
             >
-              Send another
+              {result.draft ? "Start another" : "Send another"}
             </button>
           </div>
         </div>
