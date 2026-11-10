@@ -9,6 +9,7 @@ import {
   Clock,
   Download,
   Eye,
+  Pencil,
   ShieldCheck,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -135,12 +136,22 @@ function DocumentDetailPage() {
 
           {/* Actions */}
           <div className="mt-5 flex flex-wrap gap-2">
-            {data.hasSignedPdf && (
-              <a href={`/api/signet/documents/${data.id}/signed`}>
-                <Button className="gap-2">
-                  <Download className="size-4" /> Download signed PDF
+            <a
+              href={`/api/signet/documents/${data.id}/file`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <Button className="gap-2">
+                <Download className="size-4" />
+                {data.hasSignedPdf ? "Download signed PDF" : "Open document"}
+              </Button>
+            </a>
+            {data.status === "draft" && (
+              <Link to="/documents/$id/edit" params={{ id: data.id }}>
+                <Button variant="outline" className="gap-2">
+                  <Pencil className="size-4" /> Edit fields
                 </Button>
-              </a>
+              </Link>
             )}
             {data.status === "sent" && (
               <Button
