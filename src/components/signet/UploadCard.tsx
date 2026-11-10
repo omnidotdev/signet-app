@@ -314,7 +314,7 @@ const UploadCard = ({ onSent }: Props) => {
 
           <div className="flex flex-col gap-2 sm:flex-row">
             <Button
-              className="w-full"
+              className="w-full min-w-0 sm:flex-1"
               disabled={
                 busy ||
                 savingDraft ||
@@ -332,7 +332,7 @@ const UploadCard = ({ onSent }: Props) => {
             {mode === "send" && me && (
               <Button
                 variant="outline"
-                className="w-full sm:w-auto"
+                className="w-full shrink-0 sm:w-auto"
                 disabled={busy || savingDraft || namedSigners.length === 0}
                 onClick={() => submit(true)}
               >

@@ -25,6 +25,8 @@ interface FillData {
 interface RenderedPage {
   width: number;
   height: number;
+  /** page width in PDF points, for proportional field placement */
+  widthPt: number;
   /** page height in PDF points (bottom-left origin), for field placement */
   heightPt: number;
   src: string;
@@ -132,6 +134,7 @@ const SignerFill = ({ token }: { token: string }) => {
           out.push({
             width: viewport.width,
             height: viewport.height,
+            widthPt: viewport.width / SCALE,
             heightPt: viewport.height / SCALE,
             src: canvas.toDataURL("image/png"),
           });
@@ -343,14 +346,17 @@ const SignerFill = ({ token }: { token: string }) => {
       </div>
 
       {/* Toolbar */}
-      <div className="sticky top-16 z-10 mt-6 flex items-center gap-3 border-border border-b bg-background/90 py-3 backdrop-blur">
-        <span className="text-muted-foreground text-sm">
+      <div className="sticky top-16 z-10 mt-6 flex flex-col gap-2 border-border border-b bg-background/90 py-3 backdrop-blur sm:flex-row sm:items-center sm:gap-3">
+        <span className="text-muted-foreground text-sm sm:flex-1">
           {sigCount
             ? `Sign in ${sigCount} place${sigCount === 1 ? "" : "s"}; dates fill in automatically.`
             : "Click Finish to apply your signature."}
         </span>
-        <span className="flex-1" />
-        <Button onClick={finish} disabled={submitting}>
+        <Button
+          className="w-full shrink-0 sm:w-auto"
+          onClick={finish}
+          disabled={submitting}
+        >
           {submitting ? "Signing..." : "Finish and sign"}
         </Button>
       </div>
@@ -370,14 +376,16 @@ const SignerFill = ({ token }: { token: string }) => {
             return (
               <div
                 key={pageNo}
-                className="relative mx-auto w-fit shadow-sm"
-                style={{ width: pg.width, height: pg.height }}
+                className="relative mx-auto w-full shadow-sm"
+                style={{
+                  maxWidth: pg.width,
+                  aspectRatio: `${pg.width} / ${pg.height}`,
+                }}
               >
                 <img
                   src={pg.src}
                   alt={`Page ${pageNo}`}
-                  width={pg.width}
-                  height={pg.height}
+                  className="block w-full"
                 />
                 {data.fields
                   .filter((f) => f.page === pageNo)
@@ -385,6 +393,7 @@ const SignerFill = ({ token }: { token: string }) => {
                     <FieldOverlay
                       key={f.id}
                       field={f}
+                      pageWidthPt={pg.widthPt}
                       pageHeightPt={pg.heightPt}
                       today={today}
                       typedName={typedName}
@@ -407,6 +416,7 @@ const SignerFill = ({ token }: { token: string }) => {
 
 const FieldOverlay = ({
   field,
+  pageWidthPt,
   pageHeightPt,
   today,
   typedName,
@@ -416,6 +426,7 @@ const FieldOverlay = ({
   onAdoptClick,
 }: {
   field: Field;
+  pageWidthPt: number;
   pageHeightPt: number;
   today: string;
   typedName: string;
@@ -424,12 +435,14 @@ const FieldOverlay = ({
   onText: (v: string) => void;
   onAdoptClick: () => void;
 }) => {
+  // position proportionally so overlays track the page as it scales to fit
+  const pct = (n: number, total: number) => `${(n / total) * 100}%`;
   const style: React.CSSProperties = {
     position: "absolute",
-    left: field.x * SCALE,
-    top: (pageHeightPt - field.y - field.height) * SCALE,
-    width: field.width * SCALE,
-    height: field.height * SCALE,
+    left: pct(field.x, pageWidthPt),
+    top: pct(pageHeightPt - field.y - field.height, pageHeightPt),
+    width: pct(field.width, pageWidthPt),
+    height: pct(field.height, pageHeightPt),
   };
 
   const name = typedName.trim();
