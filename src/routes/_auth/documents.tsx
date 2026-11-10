@@ -264,15 +264,19 @@ function DocumentsPage() {
                   </Button>
                 )}
 
-                {doc.hasSignedPdf && (
-                  <a
-                    href={`/api/signet/documents/${doc.id}/signed`}
-                    className="inline-flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1.5 font-medium text-primary text-sm hover:bg-primary/10"
-                  >
-                    <Download className="size-4" />
-                    <span className="hidden sm:inline">Download</span>
-                  </a>
-                )}
+                {/* open the document file at any stage: signed once sealed,
+                    else the original, so history is always accessible */}
+                <a
+                  href={`/api/signet/documents/${doc.id}/file`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1.5 font-medium text-primary text-sm hover:bg-primary/10"
+                >
+                  <Download className="size-4" />
+                  <span className="hidden sm:inline">
+                    {doc.hasSignedPdf ? "Download" : "Open"}
+                  </span>
+                </a>
 
                 <button
                   type="button"
