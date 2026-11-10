@@ -24,11 +24,12 @@ const FREE_PRICE: Price = {
   product: {
     id: "free-product",
     name: "Free",
-    description: "Start for free.",
+    description: "Everything you need to sign and send documents.",
     marketing_features: [
-      { name: "Feature 1" },
-      { name: "Feature 2" },
-      { name: "Feature 3" },
+      { name: "Sign documents and send for signature" },
+      { name: "Verifiable signatures chained to the Omni Signing Root CA" },
+      { name: "Trusted RFC 3161 timestamps" },
+      { name: "Tamper-evident provenance trail" },
     ],
   },
   metadata: { tier: "free" },
@@ -98,8 +99,11 @@ const PricingPage = () => {
 export const Route = createFileRoute("/pricing")({
   validateSearch: searchSchema,
   loader: async () => {
-    const prices = await getPrices();
-    const organizations = await getUserOrganizations();
+    // Billing and org lookups are optional integrations: when they are not
+    // configured (or unreachable) the page still renders the free tier rather
+    // than failing, per the graceful-degradation rule
+    const prices = await getPrices().catch(() => [] as Price[]);
+    const organizations = await getUserOrganizations().catch(() => []);
 
     // Fetch subscriptions for all user organizations to determine current tiers
     const orgSubscriptions: Record<string, Subscription | null> = {};
