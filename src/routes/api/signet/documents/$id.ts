@@ -10,6 +10,11 @@ import { ownerHeaders } from "@/lib/signet/ownerHeaders";
 export const Route = createFileRoute("/api/signet/documents/$id")({
   server: {
     handlers: {
+      // full status + history for a document the owner owns
+      GET: async ({ request, params }) =>
+        fetch(`${signetApiUrl()}/api/documents/${params.id}`, {
+          headers: await ownerHeaders(request.headers),
+        }),
       // rename a document the owner owns
       PATCH: async ({ request, params }) =>
         fetch(`${signetApiUrl()}/api/documents/${params.id}`, {

@@ -1,6 +1,6 @@
 import { Button } from "@omnidotdev/thornberry/button";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import {
   Check,
   Download,
@@ -209,7 +209,13 @@ function DocumentsPage() {
                     </div>
                   ) : (
                     <div className="group flex items-center gap-1.5">
-                      <p className="truncate font-medium text-sm">{doc.name}</p>
+                      <Link
+                        to="/documents/$id"
+                        params={{ id: doc.id }}
+                        className="truncate font-medium text-sm hover:text-primary hover:underline"
+                      >
+                        {doc.name}
+                      </Link>
                       <button
                         type="button"
                         aria-label={`Rename ${doc.name}`}
