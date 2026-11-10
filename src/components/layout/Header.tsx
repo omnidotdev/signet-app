@@ -5,6 +5,7 @@ import { useLocation, useRouteContext } from "@tanstack/react-router";
 import { Menu as MenuIcon } from "lucide-react";
 
 import { InternalLink } from "@/components/core";
+import Logo from "@/components/Logo";
 import { ThemeToggle } from "@/components/layout";
 import {
   AvatarFallback,
@@ -59,7 +60,12 @@ const Header = () => {
       <div className="mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           <div className="flex min-w-0 gap-2">
-            <InternalLink to="/" variant="unstyled" className="-ml-4">
+            <InternalLink
+              to="/"
+              variant="unstyled"
+              className="-ml-4 flex items-center gap-2"
+            >
+              <Logo className="size-6 text-primary" />
               <h1 className="font-bold text-xl">{app.name}</h1>
             </InternalLink>
 

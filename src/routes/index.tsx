@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { CheckCircle2, ShieldCheck, Stamp } from "lucide-react";
 
+import Logo from "@/components/Logo";
 import UploadCard from "@/components/signet/UploadCard";
 
 export const Route = createFileRoute("/")({
@@ -29,7 +30,8 @@ function LandingPage() {
   return (
     <div className="mx-auto w-full max-w-5xl px-5 py-12 sm:py-16">
       <header className="mx-auto max-w-2xl text-center">
-        <h1 className="text-balance font-semibold text-4xl tracking-tight sm:text-5xl">
+        <Logo className="mx-auto size-14 text-primary" />
+        <h1 className="mt-5 text-balance font-semibold text-4xl tracking-tight sm:text-5xl">
           Sign documents with proof.
         </h1>
         <p className="mt-4 text-balance text-base text-muted-foreground sm:text-lg">
