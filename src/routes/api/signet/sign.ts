@@ -4,7 +4,8 @@ import { signetApiUrl } from "@/lib/signet/config";
 
 /**
  * Proxy the stateless quick-sign to the Signet API, server-side, so the browser
- * never needs cross-origin access. Streams the signed PDF straight back.
+ * never needs cross-origin access. Quick-sign streams the signed PDF straight
+ * back and persists nothing, so it carries no owner identity.
  */
 export const Route = createFileRoute("/api/signet/sign")({
   server: {
