@@ -1,7 +1,8 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Download, FileText } from "lucide-react";
 
+import UploadCard from "@/components/signet/UploadCard";
 import createMetaTags from "@/lib/util/createMetaTags";
 
 export const Route = createFileRoute("/_auth/documents")({
@@ -43,6 +44,7 @@ const prettyDate = (iso: string) =>
  * shared through their workspace), so an upload is never stranded.
  */
 function DocumentsPage() {
+  const queryClient = useQueryClient();
   const { data, isPending, isError } = useQuery({
     queryKey: ["signet", "documents"],
     queryFn: async (): Promise<OwnerDocument[]> => {
@@ -57,10 +59,23 @@ function DocumentsPage() {
     <div className="mx-auto w-full max-w-4xl px-5 py-12 sm:py-16">
       <h1 className="font-semibold text-3xl tracking-tight">Your documents</h1>
       <p className="mt-2 text-muted-foreground text-sm">
-        Everything you have signed or sent for signature.
+        Upload a PDF to sign it or send it for signature, and track everything
+        here.
       </p>
 
       <div className="mt-8">
+        <UploadCard
+          onSent={() =>
+            queryClient.invalidateQueries({
+              queryKey: ["signet", "documents"],
+            })
+          }
+        />
+      </div>
+
+      <h2 className="mt-12 font-medium text-lg">History</h2>
+
+      <div className="mt-4">
         {isPending ? (
           <p className="text-muted-foreground text-sm">
             Loading your documents.
@@ -70,12 +85,11 @@ function DocumentsPage() {
             Could not load your documents. Please try again.
           </p>
         ) : data.length === 0 ? (
-          <div className="rounded-2xl border border-border border-dashed bg-card p-10 text-center">
-            <FileText className="mx-auto size-8 text-muted-foreground" />
-            <p className="mt-3 font-medium text-sm">No documents yet.</p>
+          <div className="rounded-2xl border border-border border-dashed bg-card p-8 text-center">
+            <FileText className="mx-auto size-7 text-muted-foreground" />
+            <p className="mt-3 font-medium text-sm">Nothing here yet.</p>
             <p className="mt-1 text-muted-foreground text-sm">
-              Upload a PDF from the home page to sign it or send it for
-              signature.
+              Anything you sign or send for signature will show up here.
             </p>
           </div>
         ) : (
