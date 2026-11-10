@@ -1,7 +1,7 @@
 import { Button } from "@omnidotdev/thornberry/button";
-import { CheckCircle2, Download } from "lucide-react";
+import { ArrowDown, CheckCircle2, Download, Loader2 } from "lucide-react";
 import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 interface Field {
   id: string;
@@ -64,11 +64,13 @@ const SignerFill = ({ token }: { token: string }) => {
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [highlightId, setHighlightId] = useState<string | null>(null);
 
   const padRef = useRef<HTMLCanvasElement>(null);
   const adoptRef = useRef<HTMLDivElement>(null);
   const drawingRef = useRef(false);
   const lastRef = useRef<[number, number]>([0, 0]);
+  const cursorRef = useRef(-1);
 
   // Load the signer's fill data
   useEffect(() => {
@@ -206,6 +208,55 @@ const SignerFill = ({ token }: { token: string }) => {
   const focusAdopt = useCallback(() => {
     adoptRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
   }, []);
+
+  // the fields a signer acts on, top-to-bottom, for the "next field" tour
+  // (dates fill automatically, so they are not part of the tour)
+  const tourFields = useMemo(
+    () =>
+      (data?.fields ?? [])
+        .filter((f) => f.type !== "date")
+        .sort((a, b) => a.page - b.page || b.y - a.y),
+    [data],
+  );
+
+  const isIncomplete = useCallback(
+    (f: Field) =>
+      f.type === "text"
+        ? !(textValues[f.id] ?? "").trim()
+        : !(typedName.trim() || activeImage),
+    [textValues, typedName, activeImage],
+  );
+
+  const incompleteCount = tourFields.filter(isIncomplete).length;
+
+  // jump to the next field that still needs input, cycling; a signature field
+  // sends focus to the adopt box, a text field gets focused to type
+  const goToNext = useCallback(() => {
+    const n = tourFields.length;
+    if (n === 0) return;
+    let next = -1;
+    for (let k = 1; k <= n; k++) {
+      const i = (cursorRef.current + k) % n;
+      const f = tourFields[i];
+      if (f && isIncomplete(f)) {
+        next = i;
+        break;
+      }
+    }
+    if (next === -1) next = (cursorRef.current + 1) % n;
+    cursorRef.current = next;
+    const field = tourFields[next];
+    if (!field) return;
+    const el = document.querySelector<HTMLElement>(`[data-fid="${field.id}"]`);
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    setHighlightId(field.id);
+    if (field.type === "text") setTimeout(() => el?.focus(), 350);
+    else focusAdopt();
+    setTimeout(
+      () => setHighlightId((id) => (id === field.id ? null : id)),
+      1600,
+    );
+  }, [tourFields, isIncomplete, focusAdopt]);
 
   const finish = async () => {
     const name = typedName.trim();
@@ -367,9 +418,19 @@ const SignerFill = ({ token }: { token: string }) => {
       {/* Document */}
       <div className="mt-6 space-y-4">
         {pages.length === 0 ? (
-          <p className="text-muted-foreground text-sm">
-            Rendering the document.
-          </p>
+          <>
+            <div className="flex items-center justify-center gap-2 py-3 text-muted-foreground text-sm">
+              <Loader2 className="size-4 animate-spin" /> Rendering the
+              document.
+            </div>
+            {[0, 1].map((k) => (
+              <div
+                key={k}
+                className="mx-auto w-full animate-pulse rounded bg-muted"
+                style={{ maxWidth: 612, aspectRatio: "612 / 792" }}
+              />
+            ))}
+          </>
         ) : (
           pages.map((pg, i) => {
             const pageNo = i + 1;
@@ -398,6 +459,7 @@ const SignerFill = ({ token }: { token: string }) => {
                       today={today}
                       typedName={typedName}
                       image={activeImage}
+                      highlight={highlightId === f.id}
                       textValue={textValues[f.id] ?? ""}
                       onText={(v) =>
                         setTextValues((prev) => ({ ...prev, [f.id]: v }))
@@ -410,6 +472,20 @@ const SignerFill = ({ token }: { token: string }) => {
           })
         )}
       </div>
+
+      {/* Floating next-field tracker (DocuSign-style) */}
+      {pages.length > 0 && tourFields.length > 0 && (
+        <button
+          type="button"
+          onClick={goToNext}
+          className="fixed bottom-6 left-1/2 z-20 inline-flex -translate-x-1/2 items-center gap-2 rounded-full bg-primary px-5 py-2.5 font-medium text-primary-foreground text-sm shadow-lg transition-colors hover:bg-primary/90"
+        >
+          <ArrowDown className="size-4" />
+          {incompleteCount > 0
+            ? `Next field (${incompleteCount} left)`
+            : "Review fields"}
+        </button>
+      )}
     </div>
   );
 };
@@ -421,6 +497,7 @@ const FieldOverlay = ({
   today,
   typedName,
   image,
+  highlight,
   textValue,
   onText,
   onAdoptClick,
@@ -431,6 +508,7 @@ const FieldOverlay = ({
   today: string;
   typedName: string;
   image: string | null;
+  highlight: boolean;
   textValue: string;
   onText: (v: string) => void;
   onAdoptClick: () => void;
@@ -446,12 +524,12 @@ const FieldOverlay = ({
   };
 
   const name = typedName.trim();
-  const filledClass =
-    "flex items-center justify-center overflow-hidden rounded border border-primary";
+  const ring = highlight ? "ring-2 ring-primary ring-offset-2" : "";
+  const filledClass = `flex items-center justify-center overflow-hidden rounded border border-primary ${ring}`;
 
   if (field.type === "date") {
     return (
-      <div style={style} className={filledClass}>
+      <div style={style} data-fid={field.id} className={filledClass}>
         <span className="whitespace-nowrap font-semibold text-slate-800 italic">
           {today}
         </span>
@@ -463,9 +541,10 @@ const FieldOverlay = ({
     return (
       <div
         style={style}
-        className="overflow-hidden rounded border border-primary bg-primary/10"
+        className={`overflow-hidden rounded border border-primary bg-primary/10 ${ring}`}
       >
         <input
+          data-fid={field.id}
           value={textValue}
           onChange={(e) => onText(e.target.value)}
           placeholder="Text"
@@ -485,6 +564,7 @@ const FieldOverlay = ({
       type="button"
       onClick={onAdoptClick}
       style={style}
+      data-fid={field.id}
       className={`${filledClass} cursor-pointer ${filled ? "" : "bg-primary/10"}`}
     >
       {image ? (
