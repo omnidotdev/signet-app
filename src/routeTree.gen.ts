@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SignTokenRouteImport } from './routes/sign/$token'
 import { Route as AuthProfileRouteImport } from './routes/_auth/profile'
 import { Route as AuthDocumentsRouteImport } from './routes/_auth/documents'
 import { Route as AuthDashboardRouteImport } from './routes/_auth/dashboard'
@@ -23,9 +24,11 @@ import { Route as ApiSignetDocumentsRouteImport } from './routes/api/signet/docu
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as AuthAtChar123workspaceSlugChar125ResourceSlugRouteImport } from './routes/_auth/@{$workspaceSlug}/$resourceSlug'
 import { Route as AuthAtChar123workspaceSlugChar125ResourceSlugIndexRouteImport } from './routes/_auth/@{$workspaceSlug}/$resourceSlug/index'
+import { Route as ApiSignetSignTokenRouteImport } from './routes/api/signet/sign/$token'
 import { Route as AuthAtChar123workspaceSlugChar125Char126SettingsRouteImport } from './routes/_auth/@{$workspaceSlug}/~/settings'
 import { Route as AuthAtChar123workspaceSlugChar125Char126MembersRouteImport } from './routes/_auth/@{$workspaceSlug}/~/members'
 import { Route as AuthAtChar123workspaceSlugChar125Char126BillingRouteImport } from './routes/_auth/@{$workspaceSlug}/~/billing'
+import { Route as ApiSignetSignTokenDownloadRouteImport } from './routes/api/signet/sign/$token/download'
 import { Route as ApiSignetDocumentsIdSignedRouteImport } from './routes/api/signet/documents/$id/signed'
 import { Route as AuthAtChar123workspaceSlugChar125ResourceSlugChar126SettingsRouteImport } from './routes/_auth/@{$workspaceSlug}/$resourceSlug/~/settings'
 
@@ -41,6 +44,11 @@ const AuthRoute = AuthRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignTokenRoute = SignTokenRouteImport.update({
+  id: '/sign/$token',
+  path: '/sign/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthProfileRoute = AuthProfileRouteImport.update({
@@ -102,6 +110,11 @@ const AuthAtChar123workspaceSlugChar125ResourceSlugIndexRoute =
     path: '/',
     getParentRoute: () => AuthAtChar123workspaceSlugChar125ResourceSlugRoute,
   } as any)
+const ApiSignetSignTokenRoute = ApiSignetSignTokenRouteImport.update({
+  id: '/$token',
+  path: '/$token',
+  getParentRoute: () => ApiSignetSignRoute,
+} as any)
 const AuthAtChar123workspaceSlugChar125Char126SettingsRoute =
   AuthAtChar123workspaceSlugChar125Char126SettingsRouteImport.update({
     id: '/~/settings',
@@ -119,6 +132,12 @@ const AuthAtChar123workspaceSlugChar125Char126BillingRoute =
     id: '/~/billing',
     path: '/~/billing',
     getParentRoute: () => AuthAtChar123workspaceSlugChar125Route,
+  } as any)
+const ApiSignetSignTokenDownloadRoute =
+  ApiSignetSignTokenDownloadRouteImport.update({
+    id: '/download',
+    path: '/download',
+    getParentRoute: () => ApiSignetSignTokenRoute,
   } as any)
 const ApiSignetDocumentsIdSignedRoute =
   ApiSignetDocumentsIdSignedRouteImport.update({
@@ -142,18 +161,21 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthDashboardRoute
   '/documents': typeof AuthDocumentsRoute
   '/profile': typeof AuthProfileRoute
+  '/sign/$token': typeof SignTokenRoute
   '/@{$workspaceSlug}/$resourceSlug': typeof AuthAtChar123workspaceSlugChar125ResourceSlugRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/signet/documents': typeof ApiSignetDocumentsRouteWithChildren
-  '/api/signet/sign': typeof ApiSignetSignRoute
+  '/api/signet/sign': typeof ApiSignetSignRouteWithChildren
   '/@{$workspaceSlug}/': typeof AuthAtChar123workspaceSlugChar125IndexRoute
   '/organizations/': typeof AuthOrganizationsIndexRoute
   '/@{$workspaceSlug}/~/billing': typeof AuthAtChar123workspaceSlugChar125Char126BillingRoute
   '/@{$workspaceSlug}/~/members': typeof AuthAtChar123workspaceSlugChar125Char126MembersRoute
   '/@{$workspaceSlug}/~/settings': typeof AuthAtChar123workspaceSlugChar125Char126SettingsRoute
+  '/api/signet/sign/$token': typeof ApiSignetSignTokenRouteWithChildren
   '/@{$workspaceSlug}/$resourceSlug/': typeof AuthAtChar123workspaceSlugChar125ResourceSlugIndexRoute
   '/@{$workspaceSlug}/$resourceSlug/~/settings': typeof AuthAtChar123workspaceSlugChar125ResourceSlugChar126SettingsRoute
   '/api/signet/documents/$id/signed': typeof ApiSignetDocumentsIdSignedRoute
+  '/api/signet/sign/$token/download': typeof ApiSignetSignTokenDownloadRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -161,17 +183,20 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthDashboardRoute
   '/documents': typeof AuthDocumentsRoute
   '/profile': typeof AuthProfileRoute
+  '/sign/$token': typeof SignTokenRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/signet/documents': typeof ApiSignetDocumentsRouteWithChildren
-  '/api/signet/sign': typeof ApiSignetSignRoute
+  '/api/signet/sign': typeof ApiSignetSignRouteWithChildren
   '/@{$workspaceSlug}': typeof AuthAtChar123workspaceSlugChar125IndexRoute
   '/organizations': typeof AuthOrganizationsIndexRoute
   '/@{$workspaceSlug}/~/billing': typeof AuthAtChar123workspaceSlugChar125Char126BillingRoute
   '/@{$workspaceSlug}/~/members': typeof AuthAtChar123workspaceSlugChar125Char126MembersRoute
   '/@{$workspaceSlug}/~/settings': typeof AuthAtChar123workspaceSlugChar125Char126SettingsRoute
+  '/api/signet/sign/$token': typeof ApiSignetSignTokenRouteWithChildren
   '/@{$workspaceSlug}/$resourceSlug': typeof AuthAtChar123workspaceSlugChar125ResourceSlugIndexRoute
   '/@{$workspaceSlug}/$resourceSlug/~/settings': typeof AuthAtChar123workspaceSlugChar125ResourceSlugChar126SettingsRoute
   '/api/signet/documents/$id/signed': typeof ApiSignetDocumentsIdSignedRoute
+  '/api/signet/sign/$token/download': typeof ApiSignetSignTokenDownloadRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -182,18 +207,21 @@ export interface FileRoutesById {
   '/_auth/dashboard': typeof AuthDashboardRoute
   '/_auth/documents': typeof AuthDocumentsRoute
   '/_auth/profile': typeof AuthProfileRoute
+  '/sign/$token': typeof SignTokenRoute
   '/_auth/@{$workspaceSlug}/$resourceSlug': typeof AuthAtChar123workspaceSlugChar125ResourceSlugRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/signet/documents': typeof ApiSignetDocumentsRouteWithChildren
-  '/api/signet/sign': typeof ApiSignetSignRoute
+  '/api/signet/sign': typeof ApiSignetSignRouteWithChildren
   '/_auth/@{$workspaceSlug}/': typeof AuthAtChar123workspaceSlugChar125IndexRoute
   '/_auth/organizations/': typeof AuthOrganizationsIndexRoute
   '/_auth/@{$workspaceSlug}/~/billing': typeof AuthAtChar123workspaceSlugChar125Char126BillingRoute
   '/_auth/@{$workspaceSlug}/~/members': typeof AuthAtChar123workspaceSlugChar125Char126MembersRoute
   '/_auth/@{$workspaceSlug}/~/settings': typeof AuthAtChar123workspaceSlugChar125Char126SettingsRoute
+  '/api/signet/sign/$token': typeof ApiSignetSignTokenRouteWithChildren
   '/_auth/@{$workspaceSlug}/$resourceSlug/': typeof AuthAtChar123workspaceSlugChar125ResourceSlugIndexRoute
   '/_auth/@{$workspaceSlug}/$resourceSlug/~/settings': typeof AuthAtChar123workspaceSlugChar125ResourceSlugChar126SettingsRoute
   '/api/signet/documents/$id/signed': typeof ApiSignetDocumentsIdSignedRoute
+  '/api/signet/sign/$token/download': typeof ApiSignetSignTokenDownloadRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -204,6 +232,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/documents'
     | '/profile'
+    | '/sign/$token'
     | '/@{$workspaceSlug}/$resourceSlug'
     | '/api/auth/$'
     | '/api/signet/documents'
@@ -213,9 +242,11 @@ export interface FileRouteTypes {
     | '/@{$workspaceSlug}/~/billing'
     | '/@{$workspaceSlug}/~/members'
     | '/@{$workspaceSlug}/~/settings'
+    | '/api/signet/sign/$token'
     | '/@{$workspaceSlug}/$resourceSlug/'
     | '/@{$workspaceSlug}/$resourceSlug/~/settings'
     | '/api/signet/documents/$id/signed'
+    | '/api/signet/sign/$token/download'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -223,6 +254,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/documents'
     | '/profile'
+    | '/sign/$token'
     | '/api/auth/$'
     | '/api/signet/documents'
     | '/api/signet/sign'
@@ -231,9 +263,11 @@ export interface FileRouteTypes {
     | '/@{$workspaceSlug}/~/billing'
     | '/@{$workspaceSlug}/~/members'
     | '/@{$workspaceSlug}/~/settings'
+    | '/api/signet/sign/$token'
     | '/@{$workspaceSlug}/$resourceSlug'
     | '/@{$workspaceSlug}/$resourceSlug/~/settings'
     | '/api/signet/documents/$id/signed'
+    | '/api/signet/sign/$token/download'
   id:
     | '__root__'
     | '/'
@@ -243,6 +277,7 @@ export interface FileRouteTypes {
     | '/_auth/dashboard'
     | '/_auth/documents'
     | '/_auth/profile'
+    | '/sign/$token'
     | '/_auth/@{$workspaceSlug}/$resourceSlug'
     | '/api/auth/$'
     | '/api/signet/documents'
@@ -252,18 +287,21 @@ export interface FileRouteTypes {
     | '/_auth/@{$workspaceSlug}/~/billing'
     | '/_auth/@{$workspaceSlug}/~/members'
     | '/_auth/@{$workspaceSlug}/~/settings'
+    | '/api/signet/sign/$token'
     | '/_auth/@{$workspaceSlug}/$resourceSlug/'
     | '/_auth/@{$workspaceSlug}/$resourceSlug/~/settings'
     | '/api/signet/documents/$id/signed'
+    | '/api/signet/sign/$token/download'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRouteWithChildren
   PricingRoute: typeof PricingRoute
+  SignTokenRoute: typeof SignTokenRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiSignetDocumentsRoute: typeof ApiSignetDocumentsRouteWithChildren
-  ApiSignetSignRoute: typeof ApiSignetSignRoute
+  ApiSignetSignRoute: typeof ApiSignetSignRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -287,6 +325,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sign/$token': {
+      id: '/sign/$token'
+      path: '/sign/$token'
+      fullPath: '/sign/$token'
+      preLoaderRoute: typeof SignTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_auth/profile': {
@@ -366,6 +411,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthAtChar123workspaceSlugChar125ResourceSlugIndexRouteImport
       parentRoute: typeof AuthAtChar123workspaceSlugChar125ResourceSlugRoute
     }
+    '/api/signet/sign/$token': {
+      id: '/api/signet/sign/$token'
+      path: '/$token'
+      fullPath: '/api/signet/sign/$token'
+      preLoaderRoute: typeof ApiSignetSignTokenRouteImport
+      parentRoute: typeof ApiSignetSignRoute
+    }
     '/_auth/@{$workspaceSlug}/~/settings': {
       id: '/_auth/@{$workspaceSlug}/~/settings'
       path: '/~/settings'
@@ -386,6 +438,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/@{$workspaceSlug}/~/billing'
       preLoaderRoute: typeof AuthAtChar123workspaceSlugChar125Char126BillingRouteImport
       parentRoute: typeof AuthAtChar123workspaceSlugChar125Route
+    }
+    '/api/signet/sign/$token/download': {
+      id: '/api/signet/sign/$token/download'
+      path: '/download'
+      fullPath: '/api/signet/sign/$token/download'
+      preLoaderRoute: typeof ApiSignetSignTokenDownloadRouteImport
+      parentRoute: typeof ApiSignetSignTokenRoute
     }
     '/api/signet/documents/$id/signed': {
       id: '/api/signet/documents/$id/signed'
@@ -479,13 +538,37 @@ const ApiSignetDocumentsRouteChildren: ApiSignetDocumentsRouteChildren = {
 const ApiSignetDocumentsRouteWithChildren =
   ApiSignetDocumentsRoute._addFileChildren(ApiSignetDocumentsRouteChildren)
 
+interface ApiSignetSignTokenRouteChildren {
+  ApiSignetSignTokenDownloadRoute: typeof ApiSignetSignTokenDownloadRoute
+}
+
+const ApiSignetSignTokenRouteChildren: ApiSignetSignTokenRouteChildren = {
+  ApiSignetSignTokenDownloadRoute: ApiSignetSignTokenDownloadRoute,
+}
+
+const ApiSignetSignTokenRouteWithChildren =
+  ApiSignetSignTokenRoute._addFileChildren(ApiSignetSignTokenRouteChildren)
+
+interface ApiSignetSignRouteChildren {
+  ApiSignetSignTokenRoute: typeof ApiSignetSignTokenRouteWithChildren
+}
+
+const ApiSignetSignRouteChildren: ApiSignetSignRouteChildren = {
+  ApiSignetSignTokenRoute: ApiSignetSignTokenRouteWithChildren,
+}
+
+const ApiSignetSignRouteWithChildren = ApiSignetSignRoute._addFileChildren(
+  ApiSignetSignRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRouteWithChildren,
   PricingRoute: PricingRoute,
+  SignTokenRoute: SignTokenRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiSignetDocumentsRoute: ApiSignetDocumentsRouteWithChildren,
-  ApiSignetSignRoute: ApiSignetSignRoute,
+  ApiSignetSignRoute: ApiSignetSignRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
