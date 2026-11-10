@@ -16,7 +16,7 @@ import { toast } from "sonner";
 
 import createMetaTags from "@/lib/util/createMetaTags";
 
-export const Route = createFileRoute("/_auth/documents/$id")({
+export const Route = createFileRoute("/_auth/documents/$id/")({
   head: () => ({ meta: createMetaTags({ title: "Document" }) }),
   component: DocumentDetailPage,
 });

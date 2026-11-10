@@ -17,7 +17,7 @@ import ConfirmDialog from "@/components/signet/ConfirmDialog";
 import UploadCard from "@/components/signet/UploadCard";
 import createMetaTags from "@/lib/util/createMetaTags";
 
-export const Route = createFileRoute("/_auth/documents")({
+export const Route = createFileRoute("/_auth/documents/")({
   head: () => ({
     meta: createMetaTags({ title: "Your documents" }),
   }),
