@@ -63,6 +63,16 @@ const Header = () => {
               <h1 className="font-bold text-xl">{app.name}</h1>
             </InternalLink>
 
+            {auth && (
+              <InternalLink
+                to="/documents"
+                variant="ghost"
+                className="hidden sm:inline-flex"
+              >
+                Documents
+              </InternalLink>
+            )}
+
             {NAV_LINKS.map(({ to, label }) => (
               <InternalLink
                 key={to}
@@ -115,6 +125,15 @@ const Header = () => {
                 <MenuPositioner>
                   <MenuContent className="min-w-48">
                     <MenuItemGroup>
+                      <MenuItem value="documents" asChild>
+                        <InternalLink
+                          to="/documents"
+                          variant="unstyled"
+                          className="justify-start sm:hidden"
+                        >
+                          <MenuItemText>Documents</MenuItemText>
+                        </InternalLink>
+                      </MenuItem>
                       <MenuItem value="profile" asChild>
                         <InternalLink
                           to="/profile"
