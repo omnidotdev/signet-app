@@ -1,7 +1,15 @@
 import { Button } from "@omnidotdev/thornberry/button";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Download, FileText, Send, Trash2 } from "lucide-react";
+import {
+  Check,
+  Download,
+  FileText,
+  Pencil,
+  Send,
+  Trash2,
+  X,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -25,6 +33,7 @@ interface OwnerDocument {
   hasSignedPdf: boolean;
   signerName: string | null;
   signerStatus: string | null;
+  signerCount: number;
 }
 
 const statusTone: Record<string, string> = {
@@ -53,6 +62,8 @@ const DOCS_KEY = ["signet", "documents"] as const;
 function DocumentsPage() {
   const queryClient = useQueryClient();
   const [toDelete, setToDelete] = useState<OwnerDocument | null>(null);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [draftName, setDraftName] = useState("");
 
   const { data, isPending, isError } = useQuery({
     queryKey: DOCS_KEY,
@@ -96,6 +107,35 @@ function DocumentsPage() {
     onError: () => toast.error("Could not delete the document."),
   });
 
+  const renameMutation = useMutation({
+    mutationFn: async ({ id, name }: { id: string; name: string }) => {
+      const res = await fetch(`/api/signet/documents/${id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      if (!res.ok) throw new Error("rename_failed");
+    },
+    onSuccess: () => {
+      setRenamingId(null);
+      invalidate();
+    },
+    onError: () => toast.error("Could not rename the document."),
+  });
+
+  const startRename = (doc: OwnerDocument) => {
+    setRenamingId(doc.id);
+    setDraftName(doc.name);
+  };
+  const commitRename = (id: string) => {
+    const name = draftName.trim();
+    if (!name) {
+      setRenamingId(null);
+      return;
+    }
+    renameMutation.mutate({ id, name });
+  };
+
   return (
     <div className="mx-auto w-full max-w-4xl px-5 py-12 sm:py-16">
       <h1 className="font-semibold text-3xl tracking-tight">Your documents</h1>
@@ -136,9 +176,54 @@ function DocumentsPage() {
               >
                 <FileText className="size-5 shrink-0 text-muted-foreground" />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium text-sm">{doc.name}</p>
+                  {renamingId === doc.id ? (
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        // biome-ignore lint/a11y/noAutofocus: focus the field the user just chose to edit
+                        autoFocus
+                        className="input h-8 py-1"
+                        value={draftName}
+                        onChange={(e) => setDraftName(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") commitRename(doc.id);
+                          if (e.key === "Escape") setRenamingId(null);
+                        }}
+                      />
+                      <button
+                        type="button"
+                        aria-label="Save name"
+                        disabled={renameMutation.isPending}
+                        onClick={() => commitRename(doc.id)}
+                        className="inline-flex size-8 shrink-0 items-center justify-center rounded-md text-primary hover:bg-primary/10"
+                      >
+                        <Check className="size-4" />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="Cancel rename"
+                        onClick={() => setRenamingId(null)}
+                        className="inline-flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted"
+                      >
+                        <X className="size-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="group flex items-center gap-1.5">
+                      <p className="truncate font-medium text-sm">{doc.name}</p>
+                      <button
+                        type="button"
+                        aria-label={`Rename ${doc.name}`}
+                        onClick={() => startRename(doc)}
+                        className="shrink-0 text-muted-foreground opacity-0 transition-opacity hover:text-foreground focus:opacity-100 group-hover:opacity-100"
+                      >
+                        <Pencil className="size-3.5" />
+                      </button>
+                    </div>
+                  )}
                   <p className="mt-0.5 truncate text-muted-foreground text-xs">
-                    {doc.signerName ? `${doc.signerName} · ` : ""}
+                    {doc.signerName ? `${doc.signerName}` : ""}
+                    {doc.signerCount > 1 ? ` +${doc.signerCount - 1}` : ""}
+                    {doc.signerName ? " · " : ""}
                     {prettyDate(doc.createdAt)}
                   </p>
                 </div>

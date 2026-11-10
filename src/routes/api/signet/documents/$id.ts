@@ -10,6 +10,18 @@ import { ownerHeaders } from "@/lib/signet/ownerHeaders";
 export const Route = createFileRoute("/api/signet/documents/$id")({
   server: {
     handlers: {
+      // rename a document the owner owns
+      PATCH: async ({ request, params }) =>
+        fetch(`${signetApiUrl()}/api/documents/${params.id}`, {
+          method: "PATCH",
+          body: request.body,
+          headers: {
+            "content-type": request.headers.get("content-type") ?? "",
+            ...(await ownerHeaders(request.headers)),
+          },
+          // @ts-expect-error -- duplex is required to stream a request body
+          duplex: "half",
+        }),
       DELETE: async ({ request, params }) =>
         fetch(`${signetApiUrl()}/api/documents/${params.id}`, {
           method: "DELETE",
