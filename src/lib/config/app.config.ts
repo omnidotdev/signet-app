@@ -2,14 +2,12 @@
  * Application configuration.
  */
 const app = {
-  name: "Omni TanStack Start Template",
-  // Product symbol, mirrors the omni-api catalog SSOT (`catalog/products.ts`
-  // `icon`). Used in the "Made with <symbol> by Omni" footer credit
-  // ! TODO: replace with this product's catalog symbol when the template is used
-  icon: "🧩",
-  description: "Tanstack Start template. Designed and maintained by Omni.",
-  // ! TODO: replace with application url when this template is used.
-  url: "https://template-start.omni.dev",
+  name: "Signet",
+  // Product symbol, mirrors the omni-api catalog SSOT (`catalog/products.ts`)
+  icon: "🖋",
+  description:
+    "Sign documents with a verifiable signature, a trusted timestamp, and a tamper-evident provenance trail.",
+  url: "https://signet.omni.dev",
   docsUrl: "https://docs.omni.dev",
   socials: {
     discord: "https://discord.gg/omnidotdev",
@@ -29,7 +27,7 @@ const app = {
   },
   /** PWA configuration. Values should match public/manifest.json. */
   pwa: {
-    themeColor: "#000000",
+    themeColor: "#be6221",
     backgroundColor: "#000000",
   },
 };

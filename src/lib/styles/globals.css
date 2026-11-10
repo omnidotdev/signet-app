@@ -99,18 +99,19 @@
   --base-950: oklch(0.141 0.004 285.83);
   --base-1000: oklch(0.096 0.0027 285.79);
 
-  --primary-50: oklch(0.9848 0.0133 188.69);
-  --primary-100: oklch(0.9546 0.0419 188.91);
-  --primary-200: oklch(0.9126 0.0775 188.86);
-  --primary-300: oklch(0.8584 0.1147 189.63);
-  --primary-400: oklch(0.758 0.1301 191.61);
-  --primary-500: oklch(0.7076 0.1202 192.87);
-  --primary-600: oklch(0.6031 0.1027 195.48);
-  --primary-700: oklch(0.5142 0.0843 197.08);
-  --primary-800: oklch(0.4414 0.0684 198.69);
-  --primary-900: oklch(0.3902 0.0556 199.49);
-  --primary-950: oklch(0.2852 0.0419 202.03);
-  --primary-1000: oklch(0.2171 0.0331 202.65);
+  /* Signet brand: citrine amber (fabric realm), anchored on #be6221 */
+  --primary-50: oklch(0.979 0.019 84);
+  --primary-100: oklch(0.955 0.042 80);
+  --primary-200: oklch(0.908 0.078 74);
+  --primary-300: oklch(0.847 0.108 68);
+  --primary-400: oklch(0.752 0.131 62);
+  --primary-500: oklch(0.679 0.139 57);
+  --primary-600: oklch(0.605 0.136 54);
+  --primary-700: oklch(0.524 0.118 52);
+  --primary-800: oklch(0.453 0.101 50);
+  --primary-900: oklch(0.399 0.085 49);
+  --primary-950: oklch(0.288 0.06 48);
+  --primary-1000: oklch(0.218 0.044 47);
 
   --secondary-50: oklch(0.9769 0.0144 320.55);
   --secondary-100: oklch(0.9519 0.0314 319.35);
