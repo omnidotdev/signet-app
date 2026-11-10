@@ -242,6 +242,17 @@ function DocumentsPage() {
                 </span>
 
                 {doc.status === "draft" && (
+                  <Link
+                    to="/documents/$id/edit"
+                    params={{ id: doc.id }}
+                    className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 font-medium text-sm hover:bg-muted"
+                  >
+                    <Pencil className="size-4" />
+                    <span className="hidden sm:inline">Edit</span>
+                  </Link>
+                )}
+
+                {doc.status === "draft" && (
                   <Button
                     variant="outline"
                     size="sm"
