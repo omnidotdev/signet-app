@@ -1,7 +1,11 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Button } from "@omnidotdev/thornberry/button";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Download, FileText } from "lucide-react";
+import { Download, FileText, Send, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
 
+import ConfirmDialog from "@/components/signet/ConfirmDialog";
 import UploadCard from "@/components/signet/UploadCard";
 import createMetaTags from "@/lib/util/createMetaTags";
 
@@ -39,20 +43,57 @@ const prettyDate = (iso: string) =>
     day: "numeric",
   });
 
+const DOCS_KEY = ["signet", "documents"] as const;
+
 /**
  * The signed-in sender's documents. Lists everything they own (and anything
- * shared through their workspace), so an upload is never stranded.
+ * shared through their workspace), so an upload is never stranded. Drafts can
+ * be sent or deleted; sent documents can be downloaded or deleted.
  */
 function DocumentsPage() {
   const queryClient = useQueryClient();
+  const [toDelete, setToDelete] = useState<OwnerDocument | null>(null);
+
   const { data, isPending, isError } = useQuery({
-    queryKey: ["signet", "documents"],
+    queryKey: DOCS_KEY,
     queryFn: async (): Promise<OwnerDocument[]> => {
       const res = await fetch("/api/signet/documents");
       if (!res.ok) throw new Error("documents_unavailable");
       const body = (await res.json()) as { documents: OwnerDocument[] };
       return body.documents;
     },
+  });
+
+  const invalidate = () =>
+    queryClient.invalidateQueries({ queryKey: DOCS_KEY });
+
+  const sendMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/signet/documents/${id}/send`, {
+        method: "POST",
+      });
+      if (!res.ok) throw new Error("send_failed");
+    },
+    onSuccess: () => {
+      toast.success("Sent for signature.");
+      invalidate();
+    },
+    onError: () => toast.error("Could not send the document."),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/signet/documents/${id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("delete_failed");
+    },
+    onSuccess: () => {
+      toast.success("Document deleted.");
+      setToDelete(null);
+      invalidate();
+    },
+    onError: () => toast.error("Could not delete the document."),
   });
 
   return (
@@ -64,13 +105,7 @@ function DocumentsPage() {
       </p>
 
       <div className="mt-8">
-        <UploadCard
-          onSent={() =>
-            queryClient.invalidateQueries({
-              queryKey: ["signet", "documents"],
-            })
-          }
-        />
+        <UploadCard onSent={invalidate} />
       </div>
 
       <h2 className="mt-12 font-medium text-lg">History</h2>
@@ -97,7 +132,7 @@ function DocumentsPage() {
             {data.map((doc) => (
               <li
                 key={doc.id}
-                className="flex items-center gap-4 px-5 py-4 sm:px-6"
+                className="flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-4 sm:px-6"
               >
                 <FileText className="size-5 shrink-0 text-muted-foreground" />
                 <div className="min-w-0 flex-1">
@@ -114,6 +149,19 @@ function DocumentsPage() {
                 >
                   {doc.status}
                 </span>
+
+                {doc.status === "draft" && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={sendMutation.isPending}
+                    onClick={() => sendMutation.mutate(doc.id)}
+                  >
+                    <Send className="size-4" />
+                    <span className="hidden sm:inline">Send</span>
+                  </Button>
+                )}
+
                 {doc.hasSignedPdf && (
                   <a
                     href={`/api/signet/documents/${doc.id}/signed`}
@@ -123,11 +171,33 @@ function DocumentsPage() {
                     <span className="hidden sm:inline">Download</span>
                   </a>
                 )}
+
+                <button
+                  type="button"
+                  aria-label={`Delete ${doc.name}`}
+                  onClick={() => setToDelete(doc)}
+                  className="inline-flex size-9 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                >
+                  <Trash2 className="size-4" />
+                </button>
               </li>
             ))}
           </ul>
         )}
       </div>
+
+      <ConfirmDialog
+        open={toDelete !== null}
+        onOpenChange={(open) => {
+          if (!open) setToDelete(null);
+        }}
+        title={toDelete ? `Delete "${toDelete.name}"?` : "Delete document?"}
+        description="This permanently removes the document, its signatures, and its provenance record. This cannot be undone."
+        confirmLabel="Delete"
+        destructive
+        busy={deleteMutation.isPending}
+        onConfirm={() => toDelete && deleteMutation.mutate(toDelete.id)}
+      />
     </div>
   );
 }
