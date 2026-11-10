@@ -27,6 +27,7 @@ import { Route as AuthAtChar123workspaceSlugChar125ResourceSlugRouteImport } fro
 import { Route as AuthAtChar123workspaceSlugChar125ResourceSlugIndexRouteImport } from './routes/_auth/@{$workspaceSlug}/$resourceSlug/index'
 import { Route as ApiSignetSignTokenRouteImport } from './routes/api/signet/sign/$token'
 import { Route as ApiSignetDocumentsIdRouteImport } from './routes/api/signet/documents/$id'
+import { Route as AuthDocumentsIdEditRouteImport } from './routes/_auth/documents/$id/edit'
 import { Route as AuthAtChar123workspaceSlugChar125Char126SettingsRouteImport } from './routes/_auth/@{$workspaceSlug}/~/settings'
 import { Route as AuthAtChar123workspaceSlugChar125Char126MembersRouteImport } from './routes/_auth/@{$workspaceSlug}/~/members'
 import { Route as AuthAtChar123workspaceSlugChar125Char126BillingRouteImport } from './routes/_auth/@{$workspaceSlug}/~/billing'
@@ -34,6 +35,8 @@ import { Route as ApiSignetSignTokenDownloadRouteImport } from './routes/api/sig
 import { Route as ApiSignetDocumentsIdSignedRouteImport } from './routes/api/signet/documents/$id/signed'
 import { Route as ApiSignetDocumentsIdSendRouteImport } from './routes/api/signet/documents/$id/send'
 import { Route as ApiSignetDocumentsIdRemindRouteImport } from './routes/api/signet/documents/$id/remind'
+import { Route as ApiSignetDocumentsIdFieldsRouteImport } from './routes/api/signet/documents/$id/fields'
+import { Route as ApiSignetDocumentsIdEditorRouteImport } from './routes/api/signet/documents/$id/editor'
 import { Route as AuthAtChar123workspaceSlugChar125ResourceSlugChar126SettingsRouteImport } from './routes/_auth/@{$workspaceSlug}/$resourceSlug/~/settings'
 
 const PricingRoute = PricingRouteImport.update({
@@ -129,6 +132,11 @@ const ApiSignetDocumentsIdRoute = ApiSignetDocumentsIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => ApiSignetDocumentsRoute,
 } as any)
+const AuthDocumentsIdEditRoute = AuthDocumentsIdEditRouteImport.update({
+  id: '/edit',
+  path: '/edit',
+  getParentRoute: () => AuthDocumentsIdRoute,
+} as any)
 const AuthAtChar123workspaceSlugChar125Char126SettingsRoute =
   AuthAtChar123workspaceSlugChar125Char126SettingsRouteImport.update({
     id: '/~/settings',
@@ -171,6 +179,18 @@ const ApiSignetDocumentsIdRemindRoute =
     path: '/remind',
     getParentRoute: () => ApiSignetDocumentsIdRoute,
   } as any)
+const ApiSignetDocumentsIdFieldsRoute =
+  ApiSignetDocumentsIdFieldsRouteImport.update({
+    id: '/fields',
+    path: '/fields',
+    getParentRoute: () => ApiSignetDocumentsIdRoute,
+  } as any)
+const ApiSignetDocumentsIdEditorRoute =
+  ApiSignetDocumentsIdEditorRouteImport.update({
+    id: '/editor',
+    path: '/editor',
+    getParentRoute: () => ApiSignetDocumentsIdRoute,
+  } as any)
 const AuthAtChar123workspaceSlugChar125ResourceSlugChar126SettingsRoute =
   AuthAtChar123workspaceSlugChar125ResourceSlugChar126SettingsRouteImport.update(
     {
@@ -189,7 +209,7 @@ export interface FileRoutesByFullPath {
   '/profile': typeof AuthProfileRoute
   '/sign/$token': typeof SignTokenRoute
   '/@{$workspaceSlug}/$resourceSlug': typeof AuthAtChar123workspaceSlugChar125ResourceSlugRouteWithChildren
-  '/documents/$id': typeof AuthDocumentsIdRoute
+  '/documents/$id': typeof AuthDocumentsIdRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/signet/documents': typeof ApiSignetDocumentsRouteWithChildren
   '/api/signet/sign': typeof ApiSignetSignRouteWithChildren
@@ -198,10 +218,13 @@ export interface FileRoutesByFullPath {
   '/@{$workspaceSlug}/~/billing': typeof AuthAtChar123workspaceSlugChar125Char126BillingRoute
   '/@{$workspaceSlug}/~/members': typeof AuthAtChar123workspaceSlugChar125Char126MembersRoute
   '/@{$workspaceSlug}/~/settings': typeof AuthAtChar123workspaceSlugChar125Char126SettingsRoute
+  '/documents/$id/edit': typeof AuthDocumentsIdEditRoute
   '/api/signet/documents/$id': typeof ApiSignetDocumentsIdRouteWithChildren
   '/api/signet/sign/$token': typeof ApiSignetSignTokenRouteWithChildren
   '/@{$workspaceSlug}/$resourceSlug/': typeof AuthAtChar123workspaceSlugChar125ResourceSlugIndexRoute
   '/@{$workspaceSlug}/$resourceSlug/~/settings': typeof AuthAtChar123workspaceSlugChar125ResourceSlugChar126SettingsRoute
+  '/api/signet/documents/$id/editor': typeof ApiSignetDocumentsIdEditorRoute
+  '/api/signet/documents/$id/fields': typeof ApiSignetDocumentsIdFieldsRoute
   '/api/signet/documents/$id/remind': typeof ApiSignetDocumentsIdRemindRoute
   '/api/signet/documents/$id/send': typeof ApiSignetDocumentsIdSendRoute
   '/api/signet/documents/$id/signed': typeof ApiSignetDocumentsIdSignedRoute
@@ -214,7 +237,7 @@ export interface FileRoutesByTo {
   '/documents': typeof AuthDocumentsRouteWithChildren
   '/profile': typeof AuthProfileRoute
   '/sign/$token': typeof SignTokenRoute
-  '/documents/$id': typeof AuthDocumentsIdRoute
+  '/documents/$id': typeof AuthDocumentsIdRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/signet/documents': typeof ApiSignetDocumentsRouteWithChildren
   '/api/signet/sign': typeof ApiSignetSignRouteWithChildren
@@ -223,10 +246,13 @@ export interface FileRoutesByTo {
   '/@{$workspaceSlug}/~/billing': typeof AuthAtChar123workspaceSlugChar125Char126BillingRoute
   '/@{$workspaceSlug}/~/members': typeof AuthAtChar123workspaceSlugChar125Char126MembersRoute
   '/@{$workspaceSlug}/~/settings': typeof AuthAtChar123workspaceSlugChar125Char126SettingsRoute
+  '/documents/$id/edit': typeof AuthDocumentsIdEditRoute
   '/api/signet/documents/$id': typeof ApiSignetDocumentsIdRouteWithChildren
   '/api/signet/sign/$token': typeof ApiSignetSignTokenRouteWithChildren
   '/@{$workspaceSlug}/$resourceSlug': typeof AuthAtChar123workspaceSlugChar125ResourceSlugIndexRoute
   '/@{$workspaceSlug}/$resourceSlug/~/settings': typeof AuthAtChar123workspaceSlugChar125ResourceSlugChar126SettingsRoute
+  '/api/signet/documents/$id/editor': typeof ApiSignetDocumentsIdEditorRoute
+  '/api/signet/documents/$id/fields': typeof ApiSignetDocumentsIdFieldsRoute
   '/api/signet/documents/$id/remind': typeof ApiSignetDocumentsIdRemindRoute
   '/api/signet/documents/$id/send': typeof ApiSignetDocumentsIdSendRoute
   '/api/signet/documents/$id/signed': typeof ApiSignetDocumentsIdSignedRoute
@@ -243,7 +269,7 @@ export interface FileRoutesById {
   '/_auth/profile': typeof AuthProfileRoute
   '/sign/$token': typeof SignTokenRoute
   '/_auth/@{$workspaceSlug}/$resourceSlug': typeof AuthAtChar123workspaceSlugChar125ResourceSlugRouteWithChildren
-  '/_auth/documents/$id': typeof AuthDocumentsIdRoute
+  '/_auth/documents/$id': typeof AuthDocumentsIdRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/signet/documents': typeof ApiSignetDocumentsRouteWithChildren
   '/api/signet/sign': typeof ApiSignetSignRouteWithChildren
@@ -252,10 +278,13 @@ export interface FileRoutesById {
   '/_auth/@{$workspaceSlug}/~/billing': typeof AuthAtChar123workspaceSlugChar125Char126BillingRoute
   '/_auth/@{$workspaceSlug}/~/members': typeof AuthAtChar123workspaceSlugChar125Char126MembersRoute
   '/_auth/@{$workspaceSlug}/~/settings': typeof AuthAtChar123workspaceSlugChar125Char126SettingsRoute
+  '/_auth/documents/$id/edit': typeof AuthDocumentsIdEditRoute
   '/api/signet/documents/$id': typeof ApiSignetDocumentsIdRouteWithChildren
   '/api/signet/sign/$token': typeof ApiSignetSignTokenRouteWithChildren
   '/_auth/@{$workspaceSlug}/$resourceSlug/': typeof AuthAtChar123workspaceSlugChar125ResourceSlugIndexRoute
   '/_auth/@{$workspaceSlug}/$resourceSlug/~/settings': typeof AuthAtChar123workspaceSlugChar125ResourceSlugChar126SettingsRoute
+  '/api/signet/documents/$id/editor': typeof ApiSignetDocumentsIdEditorRoute
+  '/api/signet/documents/$id/fields': typeof ApiSignetDocumentsIdFieldsRoute
   '/api/signet/documents/$id/remind': typeof ApiSignetDocumentsIdRemindRoute
   '/api/signet/documents/$id/send': typeof ApiSignetDocumentsIdSendRoute
   '/api/signet/documents/$id/signed': typeof ApiSignetDocumentsIdSignedRoute
@@ -281,10 +310,13 @@ export interface FileRouteTypes {
     | '/@{$workspaceSlug}/~/billing'
     | '/@{$workspaceSlug}/~/members'
     | '/@{$workspaceSlug}/~/settings'
+    | '/documents/$id/edit'
     | '/api/signet/documents/$id'
     | '/api/signet/sign/$token'
     | '/@{$workspaceSlug}/$resourceSlug/'
     | '/@{$workspaceSlug}/$resourceSlug/~/settings'
+    | '/api/signet/documents/$id/editor'
+    | '/api/signet/documents/$id/fields'
     | '/api/signet/documents/$id/remind'
     | '/api/signet/documents/$id/send'
     | '/api/signet/documents/$id/signed'
@@ -306,10 +338,13 @@ export interface FileRouteTypes {
     | '/@{$workspaceSlug}/~/billing'
     | '/@{$workspaceSlug}/~/members'
     | '/@{$workspaceSlug}/~/settings'
+    | '/documents/$id/edit'
     | '/api/signet/documents/$id'
     | '/api/signet/sign/$token'
     | '/@{$workspaceSlug}/$resourceSlug'
     | '/@{$workspaceSlug}/$resourceSlug/~/settings'
+    | '/api/signet/documents/$id/editor'
+    | '/api/signet/documents/$id/fields'
     | '/api/signet/documents/$id/remind'
     | '/api/signet/documents/$id/send'
     | '/api/signet/documents/$id/signed'
@@ -334,10 +369,13 @@ export interface FileRouteTypes {
     | '/_auth/@{$workspaceSlug}/~/billing'
     | '/_auth/@{$workspaceSlug}/~/members'
     | '/_auth/@{$workspaceSlug}/~/settings'
+    | '/_auth/documents/$id/edit'
     | '/api/signet/documents/$id'
     | '/api/signet/sign/$token'
     | '/_auth/@{$workspaceSlug}/$resourceSlug/'
     | '/_auth/@{$workspaceSlug}/$resourceSlug/~/settings'
+    | '/api/signet/documents/$id/editor'
+    | '/api/signet/documents/$id/fields'
     | '/api/signet/documents/$id/remind'
     | '/api/signet/documents/$id/send'
     | '/api/signet/documents/$id/signed'
@@ -482,6 +520,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiSignetDocumentsIdRouteImport
       parentRoute: typeof ApiSignetDocumentsRoute
     }
+    '/_auth/documents/$id/edit': {
+      id: '/_auth/documents/$id/edit'
+      path: '/edit'
+      fullPath: '/documents/$id/edit'
+      preLoaderRoute: typeof AuthDocumentsIdEditRouteImport
+      parentRoute: typeof AuthDocumentsIdRoute
+    }
     '/_auth/@{$workspaceSlug}/~/settings': {
       id: '/_auth/@{$workspaceSlug}/~/settings'
       path: '/~/settings'
@@ -529,6 +574,20 @@ declare module '@tanstack/react-router' {
       path: '/remind'
       fullPath: '/api/signet/documents/$id/remind'
       preLoaderRoute: typeof ApiSignetDocumentsIdRemindRouteImport
+      parentRoute: typeof ApiSignetDocumentsIdRoute
+    }
+    '/api/signet/documents/$id/fields': {
+      id: '/api/signet/documents/$id/fields'
+      path: '/fields'
+      fullPath: '/api/signet/documents/$id/fields'
+      preLoaderRoute: typeof ApiSignetDocumentsIdFieldsRouteImport
+      parentRoute: typeof ApiSignetDocumentsIdRoute
+    }
+    '/api/signet/documents/$id/editor': {
+      id: '/api/signet/documents/$id/editor'
+      path: '/editor'
+      fullPath: '/api/signet/documents/$id/editor'
+      preLoaderRoute: typeof ApiSignetDocumentsIdEditorRouteImport
       parentRoute: typeof ApiSignetDocumentsIdRoute
     }
     '/_auth/@{$workspaceSlug}/$resourceSlug/~/settings': {
@@ -586,12 +645,24 @@ const AuthAtChar123workspaceSlugChar125RouteWithChildren =
     AuthAtChar123workspaceSlugChar125RouteChildren,
   )
 
+interface AuthDocumentsIdRouteChildren {
+  AuthDocumentsIdEditRoute: typeof AuthDocumentsIdEditRoute
+}
+
+const AuthDocumentsIdRouteChildren: AuthDocumentsIdRouteChildren = {
+  AuthDocumentsIdEditRoute: AuthDocumentsIdEditRoute,
+}
+
+const AuthDocumentsIdRouteWithChildren = AuthDocumentsIdRoute._addFileChildren(
+  AuthDocumentsIdRouteChildren,
+)
+
 interface AuthDocumentsRouteChildren {
-  AuthDocumentsIdRoute: typeof AuthDocumentsIdRoute
+  AuthDocumentsIdRoute: typeof AuthDocumentsIdRouteWithChildren
 }
 
 const AuthDocumentsRouteChildren: AuthDocumentsRouteChildren = {
-  AuthDocumentsIdRoute: AuthDocumentsIdRoute,
+  AuthDocumentsIdRoute: AuthDocumentsIdRouteWithChildren,
 }
 
 const AuthDocumentsRouteWithChildren = AuthDocumentsRoute._addFileChildren(
@@ -618,12 +689,16 @@ const AuthRouteChildren: AuthRouteChildren = {
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
 interface ApiSignetDocumentsIdRouteChildren {
+  ApiSignetDocumentsIdEditorRoute: typeof ApiSignetDocumentsIdEditorRoute
+  ApiSignetDocumentsIdFieldsRoute: typeof ApiSignetDocumentsIdFieldsRoute
   ApiSignetDocumentsIdRemindRoute: typeof ApiSignetDocumentsIdRemindRoute
   ApiSignetDocumentsIdSendRoute: typeof ApiSignetDocumentsIdSendRoute
   ApiSignetDocumentsIdSignedRoute: typeof ApiSignetDocumentsIdSignedRoute
 }
 
 const ApiSignetDocumentsIdRouteChildren: ApiSignetDocumentsIdRouteChildren = {
+  ApiSignetDocumentsIdEditorRoute: ApiSignetDocumentsIdEditorRoute,
+  ApiSignetDocumentsIdFieldsRoute: ApiSignetDocumentsIdFieldsRoute,
   ApiSignetDocumentsIdRemindRoute: ApiSignetDocumentsIdRemindRoute,
   ApiSignetDocumentsIdSendRoute: ApiSignetDocumentsIdSendRoute,
   ApiSignetDocumentsIdSignedRoute: ApiSignetDocumentsIdSignedRoute,
