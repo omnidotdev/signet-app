@@ -1,8 +1,18 @@
 import { Button } from "@omnidotdev/thornberry/button";
-import { FileSignature, Stamp, UploadCloud } from "lucide-react";
+import { FileSignature, Plus, Stamp, UploadCloud, X } from "lucide-react";
 import { useRef, useState } from "react";
 
 type Mode = "self" | "send";
+
+interface SignerInput {
+  name: string;
+  email: string;
+}
+
+interface SentResult {
+  manageUrl: string;
+  signers: { name: string; signUrl: string }[];
+}
 
 interface Props {
   /** Called after a document is successfully sent for signature, so a
@@ -11,23 +21,23 @@ interface Props {
   onSent?: () => void;
 }
 
+const emptySigner = (): SignerInput => ({ name: "", email: "" });
+
 /**
- * Upload a PDF and either sign it yourself (download) or send it for signature.
- * Shared by the landing page and the documents page so a signed-in user can
- * start from either place.
+ * Upload a PDF and either sign it yourself (download) or send it to one or more
+ * signers. Shared by the landing page and the documents page so a signed-in
+ * user can start from either place.
  */
 const UploadCard = ({ onSent }: Props) => {
   const [file, setFile] = useState<File | null>(null);
   const [docName, setDocName] = useState("");
   const [mode, setMode] = useState<Mode>("send");
-  const [signerName, setSignerName] = useState("");
-  const [signerEmail, setSignerEmail] = useState("");
+  const [selfName, setSelfName] = useState("");
+  const [signers, setSigners] = useState<SignerInput[]>([emptySigner()]);
+  const [sequential, setSequential] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [result, setResult] = useState<{
-    signUrl: string;
-    manageUrl: string;
-  } | null>(null);
+  const [result, setResult] = useState<SentResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -42,11 +52,22 @@ const UploadCard = ({ onSent }: Props) => {
   const reset = () => {
     setFile(null);
     setDocName("");
-    setSignerName("");
-    setSignerEmail("");
+    setSelfName("");
+    setSigners([emptySigner()]);
+    setSequential(false);
     setResult(null);
     setError(null);
   };
+
+  const setSigner = (i: number, patch: Partial<SignerInput>) =>
+    setSigners((prev) =>
+      prev.map((s, idx) => (idx === i ? { ...s, ...patch } : s)),
+    );
+  const addSigner = () => setSigners((prev) => [...prev, emptySigner()]);
+  const removeSigner = (i: number) =>
+    setSigners((prev) => prev.filter((_, idx) => idx !== i));
+
+  const namedSigners = signers.filter((s) => s.name.trim());
 
   const signMyself = async () => {
     if (!file) return;
@@ -55,7 +76,7 @@ const UploadCard = ({ onSent }: Props) => {
     try {
       const fd = new FormData();
       fd.set("file", file);
-      fd.set("name", docName || signerName || "Signer");
+      fd.set("name", docName || selfName || "Signer");
       const res = await fetch("/api/signet/sign", { method: "POST", body: fd });
       if (!res.ok) throw new Error();
       const blob = await res.blob();
@@ -73,22 +94,30 @@ const UploadCard = ({ onSent }: Props) => {
   };
 
   const send = async () => {
-    if (!file || !signerName.trim()) return;
+    if (!file || namedSigners.length === 0) return;
     setBusy(true);
     setError(null);
     try {
       const fd = new FormData();
       fd.set("file", file);
       fd.set("name", docName || file.name);
-      fd.set("signerName", signerName.trim());
-      if (signerEmail.trim()) fd.set("signerEmail", signerEmail.trim());
+      fd.set(
+        "signers",
+        JSON.stringify(
+          namedSigners.map((s) => ({
+            name: s.name.trim(),
+            email: s.email.trim() || undefined,
+          })),
+        ),
+      );
+      if (sequential && namedSigners.length > 1)
+        fd.set("signingMode", "sequential");
       const res = await fetch("/api/signet/documents", {
         method: "POST",
         body: fd,
       });
       if (!res.ok) throw new Error();
-      const data = (await res.json()) as { signUrl: string; manageUrl: string };
-      setResult(data);
+      setResult((await res.json()) as SentResult);
       onSent?.();
     } catch {
       setError("Could not send the document. Please try again.");
@@ -141,7 +170,7 @@ const UploadCard = ({ onSent }: Props) => {
         />
       </button>
 
-      {file && (
+      {file && !result && (
         <div className="mt-5 space-y-5">
           <Field label="Document name">
             <input
@@ -169,31 +198,74 @@ const UploadCard = ({ onSent }: Props) => {
           </div>
 
           {mode === "send" ? (
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Signer name">
-                <input
-                  className="input"
-                  value={signerName}
-                  onChange={(e) => setSignerName(e.target.value)}
-                  placeholder="Jordan Rivera"
-                />
-              </Field>
-              <Field label="Signer email">
-                <input
-                  className="input"
-                  type="email"
-                  value={signerEmail}
-                  onChange={(e) => setSignerEmail(e.target.value)}
-                  placeholder="jordan@example.com"
-                />
-              </Field>
+            <div className="space-y-4">
+              {signers.map((s, i) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: rows are positional and reorderable only by add/remove
+                <div key={i} className="flex items-end gap-2">
+                  <div className="grid flex-1 gap-3 sm:grid-cols-2">
+                    <Field
+                      label={
+                        signers.length > 1 ? `Signer ${i + 1}` : "Signer name"
+                      }
+                    >
+                      <input
+                        className="input"
+                        value={s.name}
+                        onChange={(e) => setSigner(i, { name: e.target.value })}
+                        placeholder="Jordan Rivera"
+                      />
+                    </Field>
+                    <Field label="Email (optional)">
+                      <input
+                        className="input"
+                        type="email"
+                        value={s.email}
+                        onChange={(e) =>
+                          setSigner(i, { email: e.target.value })
+                        }
+                        placeholder="jordan@example.com"
+                      />
+                    </Field>
+                  </div>
+                  {signers.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeSigner(i)}
+                      aria-label={`Remove signer ${i + 1}`}
+                      className="mb-1.5 inline-flex size-9 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+                    >
+                      <X className="size-4" />
+                    </button>
+                  )}
+                </div>
+              ))}
+
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+                <button
+                  type="button"
+                  onClick={addSigner}
+                  className="inline-flex items-center gap-1.5 font-medium text-primary text-sm hover:underline"
+                >
+                  <Plus className="size-4" /> Add another signer
+                </button>
+                {namedSigners.length > 1 && (
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={sequential}
+                      onChange={(e) => setSequential(e.target.checked)}
+                    />
+                    Sign in order
+                  </label>
+                )}
+              </div>
             </div>
           ) : (
             <Field label="Your name (shown on the signature)">
               <input
                 className="input"
-                value={signerName}
-                onChange={(e) => setSignerName(e.target.value)}
+                value={selfName}
+                onChange={(e) => setSelfName(e.target.value)}
                 placeholder="Your name"
               />
             </Field>
@@ -201,46 +273,58 @@ const UploadCard = ({ onSent }: Props) => {
 
           {error && <p className="text-destructive text-sm">{error}</p>}
 
-          {result ? (
-            <div className="rounded-xl border border-border bg-muted/40 p-4">
-              <p className="font-medium text-sm">Ready to sign.</p>
-              <p className="mt-1 text-muted-foreground text-xs">
-                {signerEmail.trim()
-                  ? "We emailed the signing link. You can also share it directly:"
-                  : "Share this signing link with the signer:"}
-              </p>
-              <code className="mt-2 block overflow-x-auto rounded-md bg-background px-3 py-2 text-xs">
-                {result.signUrl}
-              </code>
-              <div className="mt-3 flex items-center gap-4">
-                <a
-                  href={result.manageUrl}
-                  className="text-primary text-sm underline-offset-4 hover:underline"
-                >
-                  Track status
-                </a>
-                <button
-                  type="button"
-                  onClick={reset}
-                  className="text-muted-foreground text-sm underline-offset-4 hover:underline"
-                >
-                  Send another
-                </button>
-              </div>
-            </div>
-          ) : (
-            <Button
-              className="w-full"
-              disabled={busy || !signerName.trim()}
-              onClick={mode === "send" ? send : signMyself}
+          <Button
+            className="w-full"
+            disabled={
+              busy ||
+              (mode === "send" ? namedSigners.length === 0 : !selfName.trim())
+            }
+            onClick={mode === "send" ? send : signMyself}
+          >
+            {busy
+              ? "Working..."
+              : mode === "send"
+                ? "Send for signature"
+                : "Sign and download"}
+          </Button>
+        </div>
+      )}
+
+      {result && (
+        <div className="mt-5 rounded-xl border border-border bg-muted/40 p-4">
+          <p className="font-medium text-sm">Ready to sign.</p>
+          <p className="mt-1 text-muted-foreground text-xs">
+            Each signer can sign at their link
+            {sequential && result.signers.length > 1
+              ? " (in order; the next is emailed as each finishes)"
+              : ""}
+            . We email anyone you gave an address.
+          </p>
+          <ul className="mt-3 space-y-2">
+            {result.signers.map((s) => (
+              <li key={s.signUrl}>
+                <span className="font-medium text-sm">{s.name}</span>
+                <code className="mt-1 block overflow-x-auto rounded-md bg-background px-3 py-2 text-xs">
+                  {s.signUrl}
+                </code>
+              </li>
+            ))}
+          </ul>
+          <div className="mt-3 flex items-center gap-4">
+            <a
+              href={result.manageUrl}
+              className="text-primary text-sm underline-offset-4 hover:underline"
             >
-              {busy
-                ? "Working..."
-                : mode === "send"
-                  ? "Send for signature"
-                  : "Sign and download"}
-            </Button>
-          )}
+              Track status
+            </a>
+            <button
+              type="button"
+              onClick={reset}
+              className="text-muted-foreground text-sm underline-offset-4 hover:underline"
+            >
+              Send another
+            </button>
+          </div>
         </div>
       )}
     </div>
