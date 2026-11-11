@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-import { authz } from "@/lib/providers";
+import { getAuthz } from "@/lib/providers";
 import { authMiddleware } from "@/server/middleware";
 
 import type {
@@ -41,7 +41,7 @@ export const checkPermission = createServerFn()
   .inputValidator((data) => checkPermissionSchema.parse(data))
   .middleware([authMiddleware])
   .handler(async ({ data, context }): Promise<boolean> => {
-    return authz.checkPermission(
+    return getAuthz().checkPermission(
       context.session.user.id,
       data.resourceType,
       data.resourceId,
@@ -57,6 +57,7 @@ export const batchCheckPermissions = createServerFn()
   .inputValidator((data) => batchCheckSchema.parse(data))
   .middleware([authMiddleware])
   .handler(async ({ data, context }): Promise<boolean[]> => {
+    const authz = getAuthz();
     if (!authz.checkPermissionsBatch) {
       // Fallback to individual checks
       const results: boolean[] = [];
