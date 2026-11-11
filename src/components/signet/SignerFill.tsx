@@ -1,6 +1,7 @@
 import { Button } from "@omnidotdev/thornberry/button";
 import {
   ArrowDown,
+  ArrowUp,
   CheckCircle2,
   Download,
   FileCheck,
@@ -121,7 +122,6 @@ const SignerFill = ({
   const adoptRef = useRef<HTMLDivElement>(null);
   const drawingRef = useRef(false);
   const lastRef = useRef<[number, number]>([0, 0]);
-  const cursorRef = useRef(-1);
 
   // Load the signer's fill data, forwarding an access code when one is entered
   const load = useCallback(
@@ -358,36 +358,77 @@ const SignerFill = ({
 
   const incompleteCount = tourFields.filter(isIncomplete).length;
 
-  // jump to the next field that still needs input, cycling; a signature field
-  // sends focus to the adopt box, a text field gets focused to type
-  const goToNext = useCallback(() => {
-    const n = tourFields.length;
-    if (n === 0) return;
-    let next = -1;
-    for (let k = 1; k <= n; k++) {
-      const i = (cursorRef.current + k) % n;
-      const f = tourFields[i];
-      if (f && isIncomplete(f)) {
-        next = i;
-        break;
-      }
+  // the next field that still needs the signer's input, in reading order; the
+  // guide points here and retires once everything is filled
+  const nextField = useMemo(
+    () => tourFields.find(isIncomplete) ?? null,
+    [tourFields, isIncomplete],
+  );
+
+  // scroll a field to center and nudge the signer into it: a text field takes
+  // focus, a signature field pulls up to the adopt box while still empty
+  const focusField = useCallback(
+    (field: Field) => {
+      const el = document.querySelector<HTMLElement>(
+        `[data-fid="${field.id}"]`,
+      );
+      if (!el) return;
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      setHighlightId(field.id);
+      if (field.type === "text") setTimeout(() => el.focus(), 350);
+      else if (isIncomplete(field)) focusAdopt();
+      setTimeout(
+        () => setHighlightId((id) => (id === field.id ? null : id)),
+        1600,
+      );
+    },
+    [isIncomplete, focusAdopt],
+  );
+
+  // the floating guide is a navigation aid, so it only shows when the next
+  // field is off screen: it fades out once that field is in view and points up
+  // or down toward it, matching the guided-signing pattern
+  const [guide, setGuide] = useState<{ show: boolean; dir: "up" | "down" }>({
+    show: false,
+    dir: "down",
+  });
+
+  useEffect(() => {
+    if (!nextField) {
+      setGuide((g) => (g.show ? { show: false, dir: g.dir } : g));
+      return;
     }
-    if (next === -1) next = (cursorRef.current + 1) % n;
-    cursorRef.current = next;
-    const field = tourFields[next];
-    if (!field) return;
-    const el = document.querySelector<HTMLElement>(`[data-fid="${field.id}"]`);
-    el?.scrollIntoView({ behavior: "smooth", block: "center" });
-    setHighlightId(field.id);
-    if (field.type === "text") setTimeout(() => el?.focus(), 350);
-    // only pull up to the adopt box when no signature exists yet; once adopted,
-    // the tour moves through fields in place instead of jumping to the top
-    else if (isIncomplete(field)) focusAdopt();
-    setTimeout(
-      () => setHighlightId((id) => (id === field.id ? null : id)),
-      1600,
-    );
-  }, [tourFields, isIncomplete, focusAdopt]);
+    let raf = 0;
+    const measure = () => {
+      raf = 0;
+      const el = document.querySelector<HTMLElement>(
+        `[data-fid="${nextField.id}"]`,
+      );
+      if (!el) {
+        setGuide((g) => (g.show ? { show: false, dir: g.dir } : g));
+        return;
+      }
+      const rect = el.getBoundingClientRect();
+      const vh = window.innerHeight || document.documentElement.clientHeight;
+      const margin = Math.min(140, vh * 0.2);
+      const onScreen = rect.top >= margin && rect.bottom <= vh - margin;
+      const dir: "up" | "down" = rect.top < margin ? "up" : "down";
+      setGuide((g) =>
+        g.show === !onScreen && g.dir === dir ? g : { show: !onScreen, dir },
+      );
+    };
+    const onScroll = () => {
+      if (!raf) raf = requestAnimationFrame(measure);
+    };
+    measure();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      if (raf) cancelAnimationFrame(raf);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, [nextField]);
 
   const finish = async () => {
     const name = typedName.trim();
@@ -788,17 +829,21 @@ const SignerFill = ({
         )}
       </div>
 
-      {/* Floating next-field tracker (DocuSign-style) */}
-      {pages.length > 0 && tourFields.length > 0 && (
+      {/* Floating guide to the next field, in the guided-signing pattern */}
+      {pages.length > 0 && nextField && (
         <button
           type="button"
-          onClick={goToNext}
-          className="fixed bottom-6 left-1/2 z-20 inline-flex -translate-x-1/2 items-center gap-2 rounded-full bg-primary px-5 py-2.5 font-medium text-primary-foreground text-sm shadow-lg transition-colors hover:bg-primary/90"
+          onClick={() => focusField(nextField)}
+          className={`fixed bottom-6 left-1/2 z-20 inline-flex -translate-x-1/2 items-center gap-2 rounded-full bg-primary px-5 py-2.5 font-medium text-primary-foreground text-sm shadow-lg transition-opacity duration-200 hover:bg-primary/90 ${
+            guide.show ? "opacity-100" : "pointer-events-none opacity-0"
+          }`}
         >
-          <ArrowDown className="size-4" />
-          {incompleteCount > 0
-            ? `Next field (${incompleteCount} left)`
-            : "Review fields"}
+          {guide.dir === "up" ? (
+            <ArrowUp className="size-4" />
+          ) : (
+            <ArrowDown className="size-4" />
+          )}
+          {`Next field (${incompleteCount} left)`}
         </button>
       )}
 
