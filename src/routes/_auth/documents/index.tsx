@@ -14,6 +14,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import ConfirmDialog from "@/components/signet/ConfirmDialog";
+import TemplatesSection from "@/components/signet/TemplatesSection";
 import UploadCard from "@/components/signet/UploadCard";
 import createMetaTags from "@/lib/util/createMetaTags";
 
@@ -147,6 +148,8 @@ function DocumentsPage() {
       <div className="mt-8">
         <UploadCard onSent={invalidate} />
       </div>
+
+      <TemplatesSection />
 
       <h2 className="mt-12 font-medium text-lg">History</h2>
 
