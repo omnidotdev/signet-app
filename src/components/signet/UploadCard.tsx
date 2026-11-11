@@ -8,6 +8,7 @@ type Mode = "self" | "send";
 interface SignerInput {
   name: string;
   email: string;
+  accessCode: string;
 }
 
 interface SentResult {
@@ -23,7 +24,11 @@ interface Props {
   onSent?: () => void;
 }
 
-const emptySigner = (): SignerInput => ({ name: "", email: "" });
+const emptySigner = (): SignerInput => ({
+  name: "",
+  email: "",
+  accessCode: "",
+});
 
 /**
  * Upload a PDF and either sign it yourself (download) or send it to one or more
@@ -40,6 +45,7 @@ const UploadCard = ({ onSent }: Props) => {
   const [selfName, setSelfName] = useState("");
   const [signers, setSigners] = useState<SignerInput[]>([emptySigner()]);
   const [sequential, setSequential] = useState(false);
+  const [requireCode, setRequireCode] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [busy, setBusy] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
@@ -61,6 +67,7 @@ const UploadCard = ({ onSent }: Props) => {
     setSelfName("");
     setSigners([emptySigner()]);
     setSequential(false);
+    setRequireCode(false);
     setResult(null);
     setError(null);
   };
@@ -84,7 +91,11 @@ const UploadCard = ({ onSent }: Props) => {
   );
   const addMyself = () => {
     if (!me) return;
-    const row: SignerInput = { name: me.name ?? "", email: me.email ?? "" };
+    const row: SignerInput = {
+      name: me.name ?? "",
+      email: me.email ?? "",
+      accessCode: "",
+    };
     // fill the first empty row, else append
     setSigners((prev) => {
       const i = prev.findIndex((s) => !s.name.trim() && !s.email.trim());
@@ -131,6 +142,10 @@ const UploadCard = ({ onSent }: Props) => {
           namedSigners.map((s) => ({
             name: s.name.trim(),
             email: s.email.trim() || undefined,
+            accessCode:
+              requireCode && s.accessCode.trim()
+                ? s.accessCode.trim()
+                : undefined,
           })),
         ),
       );
@@ -270,6 +285,31 @@ const UploadCard = ({ onSent }: Props) => {
                 </div>
               ))}
 
+              {requireCode && (
+                <div className="space-y-3 rounded-lg border border-border bg-muted/30 p-3">
+                  <p className="text-muted-foreground text-xs">
+                    Each signer must enter their code to open the document.
+                    Share it with them separately (not by email).
+                  </p>
+                  {signers.map((s, i) => (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: rows are positional and reorderable only by add/remove
+                    <Field
+                      key={i}
+                      label={`Access code for ${s.name || `signer ${i + 1}`}`}
+                    >
+                      <input
+                        className="input"
+                        value={s.accessCode}
+                        onChange={(e) =>
+                          setSigner(i, { accessCode: e.target.value })
+                        }
+                        placeholder="e.g. 4821"
+                      />
+                    </Field>
+                  ))}
+                </div>
+              )}
+
               <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
                 <button
                   type="button"
@@ -297,6 +337,14 @@ const UploadCard = ({ onSent }: Props) => {
                     Sign in order
                   </label>
                 )}
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={requireCode}
+                    onChange={(e) => setRequireCode(e.target.checked)}
+                  />
+                  Require an access code
+                </label>
               </div>
             </div>
           ) : (
