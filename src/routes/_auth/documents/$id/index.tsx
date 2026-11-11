@@ -10,6 +10,7 @@ import {
   Download,
   Eye,
   FileCheck,
+  LayoutTemplate,
   Pencil,
   ShieldCheck,
 } from "lucide-react";
@@ -85,6 +86,18 @@ function DocumentDetailPage() {
       if (!res.ok) throw new Error("not_found");
       return (await res.json()) as DocumentDetail;
     },
+  });
+
+  const saveTemplate = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/signet/documents/${id}/template`, {
+        method: "POST",
+      });
+      if (!res.ok) throw new Error("template_failed");
+    },
+    onSuccess: () =>
+      toast.success("Saved as a template. Find it on your documents page."),
+    onError: () => toast.error("Could not save this as a template."),
   });
 
   const remind = useMutation({
@@ -171,6 +184,17 @@ function DocumentDetailPage() {
                   <Pencil className="size-4" /> Edit fields
                 </Button>
               </Link>
+            )}
+            {data.status === "draft" && (
+              <Button
+                variant="outline"
+                className="gap-2"
+                disabled={saveTemplate.isPending}
+                onClick={() => saveTemplate.mutate()}
+              >
+                <LayoutTemplate className="size-4" />
+                {saveTemplate.isPending ? "Saving..." : "Save as template"}
+              </Button>
             )}
             {data.status === "sent" && (
               <Button
