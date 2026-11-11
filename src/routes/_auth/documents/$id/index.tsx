@@ -18,6 +18,7 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 
+import PdfViewer from "@/components/signet/PdfViewer";
 import {
   DialogBackdrop,
   DialogContent,
@@ -303,13 +304,14 @@ function DocumentDetailPage() {
             )}
           </div>
 
-          {/* Document preview */}
-          <h2 className="mt-10 font-medium text-lg">Document</h2>
+          {/* Document preview: the signed PDF once sealed, else the original */}
+          <h2 className="mt-10 font-medium text-lg">
+            {data.hasSignedPdf ? "Signed document" : "Document"}
+          </h2>
           <div className="mt-3 overflow-hidden rounded-2xl border border-border bg-card">
-            <iframe
-              title={`${data.name} preview`}
-              src={`/api/signet/documents/${data.id}/file?disposition=inline`}
-              className="h-[32rem] w-full sm:h-[44rem]"
+            <PdfViewer
+              url={`/api/signet/documents/${data.id}/file?disposition=inline`}
+              label={data.name}
             />
           </div>
 
