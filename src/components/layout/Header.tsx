@@ -5,6 +5,7 @@ import { useLocation, useRouteContext } from "@tanstack/react-router";
 import { Menu as MenuIcon } from "lucide-react";
 
 import { InternalLink } from "@/components/core";
+import { EarlyAccessBadge } from "@/components/EarlyAccessBadge";
 import Logo from "@/components/Logo";
 import { ThemeToggle } from "@/components/layout";
 import {
@@ -68,6 +69,7 @@ const Header = () => {
               <Logo className="size-6 text-primary" />
               <h1 className="font-bold text-xl">{app.name}</h1>
             </InternalLink>
+            <EarlyAccessBadge className="hidden self-center sm:inline-flex" />
 
             {auth && (
               <InternalLink
