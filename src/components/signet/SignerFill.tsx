@@ -35,6 +35,7 @@ interface Field {
     | "radio";
   options?: string[] | null;
   required?: boolean;
+  groupId?: string | null;
   page: number;
   x: number;
   y: number;
@@ -847,7 +848,23 @@ const SignerFill = ({
                       color={data.signerColor || "#be6221"}
                       textValue={textValues[f.id] ?? ""}
                       onText={(v) =>
-                        setTextValues((prev) => ({ ...prev, [f.id]: v }))
+                        setTextValues((prev) => {
+                          // selecting a radio clears its group siblings
+                          if (f.type === "radio" && f.groupId) {
+                            const next = { ...prev };
+                            for (const other of data.fields) {
+                              if (
+                                other.type === "radio" &&
+                                other.groupId === f.groupId
+                              ) {
+                                next[other.id] = "";
+                              }
+                            }
+                            next[f.id] = v;
+                            return next;
+                          }
+                          return { ...prev, [f.id]: v };
+                        })
                       }
                       onAdoptClick={focusAdopt}
                     />
@@ -1010,44 +1027,44 @@ const FieldOverlay = ({
   }
 
   if (field.type === "radio") {
+    // one button of a radio group: an outlined circle (filled when chosen) and
+    // its label; selecting it clears the group's other buttons
+    const selected = textValue === "selected";
+    const label = field.options?.[0] ?? "";
     return (
-      <div
-        style={style}
+      <button
+        type="button"
         data-fid={field.id}
-        className={`flex items-center gap-1 overflow-hidden rounded border px-1 ${ring}`}
+        aria-pressed={selected}
+        onClick={() => onText("selected")}
+        style={{ ...base, background: "transparent" }}
+        className={`flex items-center gap-1.5 overflow-hidden px-0.5 text-left ${ring}`}
       >
-        {(field.options ?? []).map((o) => {
-          const selected = textValue === o;
-          return (
-            <button
-              key={o}
-              type="button"
-              onClick={() => onText(o)}
-              style={
-                selected ? { background: color, color: "#fff" } : undefined
-              }
-              className={`truncate rounded px-1.5 py-0.5 text-xs ${
-                selected ? "" : "text-slate-700"
-              }`}
-            >
-              {o}
-            </button>
-          );
-        })}
-      </div>
+        <span
+          className="flex shrink-0 items-center justify-center rounded-full border"
+          style={{ borderColor: color, width: "0.9em", height: "0.9em" }}
+        >
+          {selected && (
+            <span
+              className="rounded-full"
+              style={{ background: color, width: "0.5em", height: "0.5em" }}
+            />
+          )}
+        </span>
+        <span className="truncate text-slate-800 text-xs">{label}</span>
+      </button>
     );
   }
 
   if (field.type === "date") {
     return (
-      <div
-        style={style}
-        data-fid={field.id}
-        className={`flex items-center justify-center overflow-hidden rounded border ${ring}`}
-      >
-        <span className="whitespace-nowrap font-semibold text-slate-800 italic">
-          {today}
-        </span>
+      <div style={style} className={`overflow-hidden rounded border ${ring}`}>
+        <input
+          data-fid={field.id}
+          value={textValue || today}
+          onChange={(e) => onText(e.target.value)}
+          className="size-full border-0 bg-transparent px-1 text-center font-semibold text-slate-800 italic"
+        />
       </div>
     );
   }

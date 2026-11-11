@@ -45,10 +45,12 @@ interface EditorField {
   y: number;
   width: number;
   height: number;
-  /** choices for a dropdown or radio field */
+  /** choices for a dropdown field, or [label] for a radio button */
   options?: string[] | null;
   /** whether the signer must fill this field before submitting */
   required?: boolean;
+  /** links mutually-exclusive radio buttons into one group */
+  groupId?: string | null;
 }
 interface EditorSigner {
   id: string;
@@ -311,9 +313,12 @@ const FieldEditor = ({ token }: { token: string }) => {
       height: def.h,
       required: defaultRequired(addType),
       options:
-        addType === "dropdown" || addType === "radio"
+        addType === "dropdown"
           ? [...DEFAULT_OPTIONS]
-          : undefined,
+          : addType === "radio"
+            ? ["Option"]
+            : undefined,
+      groupId: addType === "radio" ? "choice" : undefined,
     };
     // a signature brings a companion "date signed" field beneath it, like the
     // major e-sign tools, so the signing date is always captured
@@ -408,6 +413,14 @@ const FieldEditor = ({ token }: { token: string }) => {
   const setSelectedRequired = (required: boolean) =>
     setFields((prev) =>
       prev.map((f) => (f.key === selected ? { ...f, required } : f)),
+    );
+  const setSelectedRadioLabel = (label: string) =>
+    setFields((prev) =>
+      prev.map((f) => (f.key === selected ? { ...f, options: [label] } : f)),
+    );
+  const setSelectedGroup = (groupId: string) =>
+    setFields((prev) =>
+      prev.map((f) => (f.key === selected ? { ...f, groupId } : f)),
     );
   const assignSelected = (signerId: string) => {
     if (selected)
@@ -520,8 +533,7 @@ const FieldEditor = ({ token }: { token: string }) => {
               </select>
             </label>
           )}
-          {(selectedField?.type === "dropdown" ||
-            selectedField?.type === "radio") && (
+          {selectedField?.type === "dropdown" && (
             <label className="flex min-w-0 flex-1 items-center gap-2 text-sm sm:flex-none">
               <span className="text-muted-foreground">Options</span>
               <input
@@ -531,6 +543,28 @@ const FieldEditor = ({ token }: { token: string }) => {
                 placeholder="Comma-separated choices"
               />
             </label>
+          )}
+          {selectedField?.type === "radio" && (
+            <>
+              <label className="flex items-center gap-2 text-sm">
+                <span className="text-muted-foreground">Label</span>
+                <input
+                  className="input h-9 w-32 py-1"
+                  value={selectedField.options?.[0] ?? ""}
+                  onChange={(e) => setSelectedRadioLabel(e.target.value)}
+                  placeholder="Choice"
+                />
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <span className="text-muted-foreground">Group</span>
+                <input
+                  className="input h-9 w-28 py-1"
+                  value={selectedField.groupId ?? ""}
+                  onChange={(e) => setSelectedGroup(e.target.value)}
+                  placeholder="Group"
+                />
+              </label>
+            </>
           )}
           {selectedField && selectedField.type !== "date" && (
             <label className="flex items-center gap-2 text-sm">
@@ -792,6 +826,13 @@ const FieldBox = ({
           className="pointer-events-none size-3.5"
           style={{ color }}
         />
+      ) : field.type === "radio" ? (
+        <span
+          className="pointer-events-none flex select-none items-center gap-1 text-[0.6rem]"
+          style={{ color }}
+        >
+          <CircleDot className="size-3" /> {field.options?.[0] ?? "Option"}
+        </span>
       ) : (
         <span
           className="pointer-events-none select-none font-semibold text-[0.6rem] uppercase tracking-wide"
