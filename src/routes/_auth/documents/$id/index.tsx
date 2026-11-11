@@ -22,6 +22,7 @@ export const Route = createFileRoute("/_auth/documents/$id/")({
 });
 
 interface DetailSigner {
+  id: string;
   name: string;
   email: string | null;
   status: string;
@@ -86,9 +87,11 @@ function DocumentDetailPage() {
   });
 
   const remind = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (signerId?: string) => {
       const res = await fetch(`/api/signet/documents/${id}/remind`, {
         method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(signerId ? { signerId } : {}),
       });
       if (!res.ok) throw new Error("remind_failed");
       return (await res.json()) as { reminded: number };
@@ -99,6 +102,10 @@ function DocumentDetailPage() {
       ),
     onError: () => toast.error("No one to remind right now."),
   });
+  const remindingId =
+    remind.isPending && typeof remind.variables === "string"
+      ? remind.variables
+      : null;
 
   return (
     <div className="mx-auto w-full max-w-3xl px-5 py-10 sm:py-14">
@@ -158,10 +165,12 @@ function DocumentDetailPage() {
                 variant="outline"
                 className="gap-2"
                 disabled={remind.isPending}
-                onClick={() => remind.mutate()}
+                onClick={() => remind.mutate(undefined)}
               >
                 <BellRing className="size-4" />
-                {remind.isPending ? "Sending..." : "Resend reminder"}
+                {remind.isPending && remindingId === null
+                  ? "Sending..."
+                  : "Remind all"}
               </Button>
             )}
           </div>
@@ -194,9 +203,22 @@ function DocumentDetailPage() {
                       Waiting
                     </span>
                   )}
-                  <span className="shrink-0 text-muted-foreground text-xs capitalize">
-                    {s.status}
-                  </span>
+                  {!signed && s.active && s.email && data.status === "sent" ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="shrink-0 gap-1.5"
+                      disabled={remind.isPending}
+                      onClick={() => remind.mutate(s.id)}
+                    >
+                      <BellRing className="size-3.5" />
+                      {remindingId === s.id ? "Sending..." : "Resend"}
+                    </Button>
+                  ) : (
+                    <span className="shrink-0 text-muted-foreground text-xs capitalize">
+                      {s.status}
+                    </span>
+                  )}
                 </li>
               );
             })}
