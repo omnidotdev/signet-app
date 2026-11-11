@@ -7,9 +7,18 @@ import {
   Loader2,
   Lock,
   UploadCloud,
+  XCircle,
 } from "lucide-react";
 import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
+import {
+  DialogBackdrop,
+  DialogContent,
+  DialogDescription,
+  DialogRoot,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface Field {
   id: string;
@@ -78,6 +87,10 @@ const SignerFill = ({ token }: { token: string }) => {
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [completedAll, setCompletedAll] = useState(false);
+  const [declineOpen, setDeclineOpen] = useState(false);
+  const [declineReason, setDeclineReason] = useState("");
+  const [declining, setDeclining] = useState(false);
+  const [declined, setDeclined] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [highlightId, setHighlightId] = useState<string | null>(null);
 
@@ -355,7 +368,44 @@ const SignerFill = ({ token }: { token: string }) => {
     }
   };
 
+  const decline = async () => {
+    setDeclining(true);
+    try {
+      const res = await fetch(`/api/signet/sign/${token}/decline`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          reason: declineReason.trim() || undefined,
+          accessCode: accessCode.trim() || undefined,
+        }),
+      });
+      if (!res.ok) throw new Error();
+      setDeclineOpen(false);
+      setDeclined(true);
+    } catch {
+      setSubmitError("Could not decline right now. Please try again.");
+      setDeclineOpen(false);
+    } finally {
+      setDeclining(false);
+    }
+  };
+
   // --- States that don't render the document ---
+
+  if (declined) {
+    return (
+      <div className="mx-auto w-full max-w-md px-5 py-16 text-center">
+        <XCircle className="mx-auto size-10 text-muted-foreground" />
+        <h1 className="mt-4 font-semibold text-2xl tracking-tight">
+          You declined to sign
+        </h1>
+        <p className="mt-2 text-muted-foreground text-sm">
+          The sender has been notified, and this document can no longer be
+          signed.
+        </p>
+      </div>
+    );
+  }
 
   if (state === "loading") {
     return <Centered>Loading the document.</Centered>;
@@ -584,6 +634,13 @@ const SignerFill = ({ token }: { token: string }) => {
       {submitError && (
         <p className="mt-2 text-destructive text-sm">{submitError}</p>
       )}
+      <button
+        type="button"
+        onClick={() => setDeclineOpen(true)}
+        className="mt-2 text-muted-foreground text-sm underline-offset-4 hover:text-destructive hover:underline"
+      >
+        Decline to sign
+      </button>
 
       {/* Document */}
       <div className="mt-6 space-y-4">
@@ -656,6 +713,48 @@ const SignerFill = ({ token }: { token: string }) => {
             : "Review fields"}
         </button>
       )}
+
+      {/* Decline to sign */}
+      <DialogRoot
+        open={declineOpen}
+        onOpenChange={(e) => {
+          if (declining) return;
+          setDeclineOpen(e.open);
+        }}
+        closeOnEscape={!declining}
+        closeOnInteractOutside={!declining}
+      >
+        <DialogBackdrop />
+        <DialogContent>
+          <DialogTitle>Decline to sign?</DialogTitle>
+          <DialogDescription>
+            This voids the document for everyone, and it can no longer be
+            signed. The sender will be notified.
+          </DialogDescription>
+          <textarea
+            className="input mt-3 min-h-20"
+            value={declineReason}
+            onChange={(e) => setDeclineReason(e.target.value)}
+            placeholder="Reason (optional)"
+          />
+          <div className="mt-4 flex justify-end gap-2">
+            <Button
+              variant="ghost"
+              disabled={declining}
+              onClick={() => setDeclineOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={declining}
+              onClick={decline}
+            >
+              {declining ? "Declining..." : "Decline to sign"}
+            </Button>
+          </div>
+        </DialogContent>
+      </DialogRoot>
     </div>
   );
 };
