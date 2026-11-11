@@ -39,9 +39,10 @@ describe("loadAppPrices", () => {
     expect(seen).toBe("Signet");
   });
 
-  // The production bug: billing is disabled, so getPrices throws an HTTPError.
-  // On client-side navigation that surfaced as an unhandled 500 and crashed the
-  // pricing page. The server function must degrade to an empty list instead.
+  // Production bug: with billing unconfigured the provider would throw an
+  // HTTPError that, on client-side navigation, surfaced as an unhandled 500 and
+  // crashed the page. The provider is now a noop when unconfigured, but the
+  // loader must still degrade if a configured billing service is unreachable.
   test("degrades to an empty list when billing throws", async () => {
     getPricesImpl = async () => {
       throw new Error("HTTPError");
