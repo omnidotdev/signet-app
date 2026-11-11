@@ -21,6 +21,7 @@ import {
   DialogRoot,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { isFieldIncomplete, isTourField } from "@/lib/signet/fieldCompletion";
 
 interface Field {
   id: string;
@@ -33,6 +34,7 @@ interface Field {
     | "dropdown"
     | "radio";
   options?: string[] | null;
+  required?: boolean;
   page: number;
   x: number;
   y: number;
@@ -348,29 +350,22 @@ const SignerFill = ({
     adoptRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
   }, []);
 
-  // the fields a signer acts on, top-to-bottom, for the "next field" tour
-  // (dates fill automatically, so they are not part of the tour)
+  // the required fields a signer must act on, top-to-bottom, for the "next
+  // field" tour (dates fill automatically and optional fields are skipped)
   const tourFields = useMemo(
     () =>
       (data?.fields ?? [])
-        // dates fill automatically, and checkbox/dropdown/radio are optional
-        // selections, so none of them is part of the required-field tour
-        .filter(
-          (f) =>
-            f.type !== "date" &&
-            f.type !== "checkbox" &&
-            f.type !== "dropdown" &&
-            f.type !== "radio",
-        )
+        .filter(isTourField)
         .sort((a, b) => a.page - b.page || b.y - a.y),
     [data],
   );
 
   const isIncomplete = useCallback(
     (f: Field) =>
-      f.type === "text"
-        ? !(textValues[f.id] ?? "").trim()
-        : !(typedName.trim() || activeImage),
+      isFieldIncomplete(f, {
+        textValue: textValues[f.id] ?? "",
+        hasSignature: Boolean(typedName.trim() || activeImage),
+      }),
     [textValues, typedName, activeImage],
   );
 
@@ -460,6 +455,12 @@ const SignerFill = ({
       setSubmitError("Type, draw, or upload your signature first.");
       return;
     }
+    // every required field must be filled before submitting
+    if (incompleteCount > 0 && nextField) {
+      setSubmitError("Please complete all required fields before signing.");
+      focusField(nextField);
+      return;
+    }
     setSubmitting(true);
     setSubmitError(null);
     try {
@@ -474,7 +475,16 @@ const SignerFill = ({
           accessCode: accessCode.trim() || undefined,
         }),
       });
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        const err = (await res.json().catch(() => ({}))) as { error?: string };
+        if (err.error === "missing_required") {
+          setSubmitError("Please complete all required fields before signing.");
+          setSubmitting(false);
+          if (nextField) focusField(nextField);
+          return;
+        }
+        throw new Error();
+      }
       const body = (await res.json().catch(() => ({}))) as {
         completed?: boolean;
       };

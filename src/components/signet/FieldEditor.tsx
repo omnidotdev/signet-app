@@ -47,6 +47,8 @@ interface EditorField {
   height: number;
   /** choices for a dropdown or radio field */
   options?: string[] | null;
+  /** whether the signer must fill this field before submitting */
+  required?: boolean;
 }
 interface EditorSigner {
   id: string;
@@ -83,6 +85,9 @@ const DEFAULTS: Record<FieldType, { w: number; h: number }> = {
   radio: { w: 150, h: 26 },
 };
 const DEFAULT_OPTIONS = ["Option 1", "Option 2"];
+// checkboxes and choice fields are optional by default; the rest must be filled
+const defaultRequired = (type: FieldType): boolean =>
+  type !== "checkbox" && type !== "dropdown" && type !== "radio";
 const TYPE_META: { type: FieldType; label: string; icon: typeof PenLine }[] = [
   { type: "signature", label: "Signature", icon: PenLine },
   { type: "date", label: "Date", icon: CalendarDays },
@@ -292,24 +297,42 @@ const FieldEditor = ({ token }: { token: string }) => {
     const topFrac = (e.clientY - rect.top) / rect.height;
     const def = DEFAULTS[addType];
     const yPt = pg.heightPt * (1 - topFrac) - def.h;
+    const x = clamp(xPt - def.w / 2, 0, pg.widthPt - def.w);
+    const y = clamp(yPt, 0, pg.heightPt - def.h);
     const key = uid();
-    setFields((prev) => [
-      ...prev,
-      {
-        key,
+    const placed: EditorField = {
+      key,
+      signerId: activeSigner,
+      type: addType,
+      page: pageNo,
+      x,
+      y,
+      width: def.w,
+      height: def.h,
+      required: defaultRequired(addType),
+      options:
+        addType === "dropdown" || addType === "radio"
+          ? [...DEFAULT_OPTIONS]
+          : undefined,
+    };
+    // a signature brings a companion "date signed" field beneath it, like the
+    // major e-sign tools, so the signing date is always captured
+    const extras: EditorField[] = [];
+    if (addType === "signature") {
+      const dateDef = DEFAULTS.date;
+      extras.push({
+        key: uid(),
         signerId: activeSigner,
-        type: addType,
+        type: "date",
         page: pageNo,
-        x: clamp(xPt - def.w / 2, 0, pg.widthPt - def.w),
-        y: clamp(yPt, 0, pg.heightPt - def.h),
-        width: def.w,
-        height: def.h,
-        options:
-          addType === "dropdown" || addType === "radio"
-            ? [...DEFAULT_OPTIONS]
-            : undefined,
-      },
-    ]);
+        x,
+        y: clamp(y - dateDef.h - 4, 0, pg.heightPt - dateDef.h),
+        width: dateDef.w,
+        height: dateDef.h,
+        required: true,
+      });
+    }
+    setFields((prev) => [...prev, placed, ...extras]);
     setSelected(key);
     setAddType(null);
   };
@@ -382,6 +405,10 @@ const FieldEditor = ({ token }: { token: string }) => {
       prev.map((f) => (f.key === selected ? { ...f, options } : f)),
     );
   };
+  const setSelectedRequired = (required: boolean) =>
+    setFields((prev) =>
+      prev.map((f) => (f.key === selected ? { ...f, required } : f)),
+    );
   const assignSelected = (signerId: string) => {
     if (selected)
       setFields((prev) =>
@@ -503,6 +530,17 @@ const FieldEditor = ({ token }: { token: string }) => {
                 onChange={(e) => setSelectedOptions(e.target.value)}
                 placeholder="Comma-separated choices"
               />
+            </label>
+          )}
+          {selectedField && selectedField.type !== "date" && (
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                className="size-4 accent-primary"
+                checked={selectedField.required !== false}
+                onChange={(e) => setSelectedRequired(e.target.checked)}
+              />
+              <span className="text-muted-foreground">Required</span>
             </label>
           )}
           <span className="flex-1" />
