@@ -1,5 +1,11 @@
 import { Button } from "@omnidotdev/thornberry/button";
-import { ArrowDown, CheckCircle2, Download, Loader2 } from "lucide-react";
+import {
+  ArrowDown,
+  CheckCircle2,
+  Download,
+  Loader2,
+  UploadCloud,
+} from "lucide-react";
 import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -57,15 +63,18 @@ const SignerFill = ({ token }: { token: string }) => {
     "loading" | "error" | "notfound" | "ready"
   >("loading");
   const [pages, setPages] = useState<RenderedPage[]>([]);
-  const [mode, setMode] = useState<"type" | "draw">("type");
+  const [mode, setMode] = useState<"type" | "draw" | "upload">("type");
   const [typedName, setTypedName] = useState("");
   const [drawnImage, setDrawnImage] = useState<string | null>(null);
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [textValues, setTextValues] = useState<Record<string, string>>({});
+  const [agreed, setAgreed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [highlightId, setHighlightId] = useState<string | null>(null);
 
+  const uploadRef = useRef<HTMLInputElement>(null);
   const padRef = useRef<HTMLCanvasElement>(null);
   const adoptRef = useRef<HTMLDivElement>(null);
   const drawingRef = useRef(false);
@@ -104,13 +113,28 @@ const SignerFill = ({ token }: { token: string }) => {
       if (typeof saved.name === "string" && saved.name)
         setTypedName(saved.name);
       if (typeof saved.image === "string" && saved.image) {
-        setDrawnImage(saved.image);
-        setMode("draw");
+        if (saved.kind === "upload") {
+          setUploadedImage(saved.image);
+          setMode("upload");
+        } else {
+          setDrawnImage(saved.image);
+          setMode("draw");
+        }
       }
     } catch {
       // no saved signature, fine
     }
   }, []);
+
+  // Adopt a signature from an uploaded image file
+  const onUploadFile = (f: File | null) => {
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") setUploadedImage(reader.result);
+    };
+    reader.readAsDataURL(f);
+  };
 
   // Render the PDF to page images once the data is available
   useEffect(() => {
@@ -199,7 +223,8 @@ const SignerFill = ({ token }: { token: string }) => {
     setDrawnImage(null);
   };
 
-  const activeImage = mode === "draw" ? drawnImage : null;
+  const activeImage =
+    mode === "draw" ? drawnImage : mode === "upload" ? uploadedImage : null;
   const sigCount =
     data?.fields.filter((f) => f.type === "signature" || f.type === "initials")
       .length ?? 0;
@@ -251,7 +276,9 @@ const SignerFill = ({ token }: { token: string }) => {
     el?.scrollIntoView({ behavior: "smooth", block: "center" });
     setHighlightId(field.id);
     if (field.type === "text") setTimeout(() => el?.focus(), 350);
-    else focusAdopt();
+    // only pull up to the adopt box when no signature exists yet; once adopted,
+    // the tour moves through fields in place instead of jumping to the top
+    else if (isIncomplete(field)) focusAdopt();
     setTimeout(
       () => setHighlightId((id) => (id === field.id ? null : id)),
       1600,
@@ -260,8 +287,14 @@ const SignerFill = ({ token }: { token: string }) => {
 
   const finish = async () => {
     const name = typedName.trim();
+    if (!agreed) {
+      setSubmitError(
+        "Please agree to sign electronically before you continue.",
+      );
+      return;
+    }
     if (sigCount > 0 && !name && !activeImage) {
-      setSubmitError("Type or draw your signature first.");
+      setSubmitError("Type, draw, or upload your signature first.");
       return;
     }
     setSubmitting(true);
@@ -274,13 +307,14 @@ const SignerFill = ({ token }: { token: string }) => {
           signature: name,
           signatureImage: activeImage ? activeImage.split(",")[1] : null,
           textValues,
+          consent: true,
         }),
       });
       if (!res.ok) throw new Error();
       try {
         localStorage.setItem(
           SIG_STORAGE_KEY,
-          JSON.stringify({ name, image: activeImage ?? null }),
+          JSON.stringify({ name, image: activeImage ?? null, kind: mode }),
         );
       } catch {
         // storing the adopted signature is best-effort
@@ -365,16 +399,23 @@ const SignerFill = ({ token }: { token: string }) => {
           <TabButton active={mode === "draw"} onClick={() => setMode("draw")}>
             Draw
           </TabButton>
+          <TabButton
+            active={mode === "upload"}
+            onClick={() => setMode("upload")}
+          >
+            Upload
+          </TabButton>
         </div>
 
-        {mode === "type" ? (
+        {mode === "type" && (
           <input
             className="input mt-3"
             value={typedName}
             onChange={(e) => setTypedName(e.target.value)}
             placeholder="Your full name"
           />
-        ) : (
+        )}
+        {mode === "draw" && (
           <div className="mt-3">
             <canvas
               ref={padRef}
@@ -394,6 +435,47 @@ const SignerFill = ({ token }: { token: string }) => {
             </button>
           </div>
         )}
+        {mode === "upload" && (
+          <div className="mt-3">
+            {uploadedImage ? (
+              <div className="flex max-w-[420px] items-center justify-center rounded-lg border border-border bg-background p-3">
+                <img
+                  src={uploadedImage}
+                  alt="Uploaded signature"
+                  className="max-h-24 max-w-full"
+                />
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => uploadRef.current?.click()}
+                className="flex w-full max-w-[420px] flex-col items-center gap-1.5 rounded-lg border border-border border-dashed bg-background px-4 py-6 text-muted-foreground text-sm hover:border-primary/60 hover:bg-muted/40"
+              >
+                <UploadCloud className="size-6" />
+                Upload an image of your signature (PNG or JPG)
+              </button>
+            )}
+            <input
+              ref={uploadRef}
+              type="file"
+              accept="image/png,image/jpeg"
+              hidden
+              onChange={(e) => onUploadFile(e.target.files?.[0] ?? null)}
+            />
+            {uploadedImage && (
+              <button
+                type="button"
+                onClick={() => {
+                  setUploadedImage(null);
+                  if (uploadRef.current) uploadRef.current.value = "";
+                }}
+                className="mt-1 text-muted-foreground text-sm underline-offset-4 hover:underline"
+              >
+                Remove
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Toolbar */}
@@ -406,11 +488,26 @@ const SignerFill = ({ token }: { token: string }) => {
         <Button
           className="w-full shrink-0 sm:w-auto"
           onClick={finish}
-          disabled={submitting}
+          disabled={submitting || !agreed}
         >
           {submitting ? "Signing..." : "Finish and sign"}
         </Button>
       </div>
+
+      {/* Electronic-records consent (ESIGN / UETA) */}
+      <label className="mt-3 flex items-start gap-2.5 text-muted-foreground text-sm">
+        <input
+          type="checkbox"
+          checked={agreed}
+          onChange={(e) => setAgreed(e.target.checked)}
+          className="mt-0.5 size-4 shrink-0"
+        />
+        <span>
+          I agree to sign this document electronically, and that my electronic
+          signature and initials are the legal equivalent of my handwritten
+          signature and are binding.
+        </span>
+      </label>
       {submitError && (
         <p className="mt-2 text-destructive text-sm">{submitError}</p>
       )}
