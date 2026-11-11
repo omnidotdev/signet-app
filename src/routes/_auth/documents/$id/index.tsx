@@ -1,6 +1,6 @@
 import { Button } from "@omnidotdev/thornberry/button";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Link, createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute, useRouteContext } from "@tanstack/react-router";
 import {
   ArrowLeft,
   BellRing,
@@ -11,6 +11,7 @@ import {
   Eye,
   FileCheck,
   LayoutTemplate,
+  PenLine,
   Pencil,
   ShieldCheck,
 } from "lucide-react";
@@ -89,6 +90,21 @@ function DocumentDetailPage() {
     },
   });
 
+  const { auth } = useRouteContext({ strict: false });
+  const myEmail = auth?.user?.email?.trim().toLowerCase();
+  const mySigner = myEmail
+    ? data?.signers.find(
+        (s) => (s.email ?? "").trim().toLowerCase() === myEmail,
+      )
+    : undefined;
+  // the signed-in user can sign in-app when they are the active signer whose
+  // turn it is and they have not already signed or declined
+  const canSign =
+    data?.status === "sent" &&
+    Boolean(mySigner?.active) &&
+    mySigner?.status !== "signed" &&
+    mySigner?.status !== "declined";
+
   const saveTemplate = useMutation({
     mutationFn: async () => {
       const res = await fetch(`/api/signet/documents/${id}/template`, {
@@ -158,6 +174,13 @@ function DocumentDetailPage() {
 
           {/* Actions */}
           <div className="mt-5 flex flex-wrap gap-2">
+            {canSign && (
+              <Link to="/documents/$id/sign" params={{ id: data.id }}>
+                <Button className="gap-2">
+                  <PenLine className="size-4" /> Sign
+                </Button>
+              </Link>
+            )}
             <a
               href={`/api/signet/documents/${data.id}/file`}
               target="_blank"

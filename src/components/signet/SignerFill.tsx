@@ -69,7 +69,29 @@ const initialsOf = (name: string) =>
  * fields in place, and sign. Date fields fill automatically. Runs entirely on
  * the client (pdf.js touches the DOM), hosted on the app origin.
  */
-const SignerFill = ({ token }: { token: string }) => {
+const SignerFill = ({
+  token,
+  basePath,
+  savedSignatureUrl,
+  backHref,
+}: {
+  /** public signer flow: the capability token from the emailed link */
+  token?: string;
+  /**
+   * authenticated in-app flow: an app-origin base path whose GET/POST and
+   * /decline mirror the token endpoints, with the capability resolved
+   * server-side so it never reaches the browser
+   */
+  basePath?: string;
+  /**
+   * when set, the signed-in user's saved signature is loaded from and written
+   * back to this endpoint, so it is reused across their documents and devices
+   */
+  savedSignatureUrl?: string;
+  /** when set (in-app flow), the completion screen links back here */
+  backHref?: string;
+}) => {
+  const base = basePath ?? `/api/signet/sign/${token}`;
   const [data, setData] = useState<FillData | null>(null);
   const [state, setState] = useState<
     "loading" | "error" | "notfound" | "locked" | "ready"
@@ -105,7 +127,7 @@ const SignerFill = ({ token }: { token: string }) => {
   const load = useCallback(
     async (code?: string): Promise<void> => {
       try {
-        const res = await fetch(`/api/signet/sign/${token}`, {
+        const res = await fetch(base, {
           headers: code ? { "x-signet-access-code": code } : {},
         });
         if (res.status === 404) {
@@ -126,7 +148,7 @@ const SignerFill = ({ token }: { token: string }) => {
         setState("error");
       }
     },
-    [token],
+    [base],
   );
 
   useEffect(() => {
@@ -142,13 +164,32 @@ const SignerFill = ({ token }: { token: string }) => {
     setUnlocking(false);
   };
 
-  // Restore a signature adopted earlier on this device
+  // On touch devices drawing a signature is natural, so lead with Draw; on a
+  // desktop pointer typing is faster and more legible, so lead with Type.
+  // Compute after mount to keep the first client paint matching the server.
+  const [coarsePointer, setCoarsePointer] = useState(false);
   useEffect(() => {
     try {
-      const saved = JSON.parse(localStorage.getItem(SIG_STORAGE_KEY) ?? "{}");
-      if (typeof saved.name === "string" && saved.name)
-        setTypedName(saved.name);
-      if (typeof saved.image === "string" && saved.image) {
+      const coarse = window.matchMedia?.("(pointer: coarse)").matches ?? false;
+      setCoarsePointer(coarse);
+      // lead with Draw on touch; a saved signature (loaded next) overrides this
+      if (coarse) setMode("draw");
+    } catch {
+      // matchMedia unavailable, keep the desktop default
+    }
+  }, []);
+
+  // Restore a previously adopted signature: from the signed-in user's saved
+  // signature when available (reused across devices), else from this device's
+  // local storage for anonymous signers
+  useEffect(() => {
+    const applySaved = (saved: {
+      name?: string | null;
+      image?: string | null;
+      kind?: string;
+    }) => {
+      if (saved.name) setTypedName(saved.name);
+      if (saved.image) {
         if (saved.kind === "upload") {
           setUploadedImage(saved.image);
           setMode("upload");
@@ -157,10 +198,37 @@ const SignerFill = ({ token }: { token: string }) => {
           setMode("draw");
         }
       }
+    };
+    if (savedSignatureUrl) {
+      let cancelled = false;
+      void (async () => {
+        try {
+          const res = await fetch(savedSignatureUrl);
+          if (!res.ok) return;
+          const body = (await res.json()) as {
+            signature?: {
+              typedName?: string | null;
+              image?: string | null;
+              mode?: string;
+            } | null;
+          };
+          const sig = body.signature;
+          if (!sig || cancelled) return;
+          applySaved({ name: sig.typedName, image: sig.image, kind: sig.mode });
+        } catch {
+          // no saved signature, fine
+        }
+      })();
+      return () => {
+        cancelled = true;
+      };
+    }
+    try {
+      applySaved(JSON.parse(localStorage.getItem(SIG_STORAGE_KEY) ?? "{}"));
     } catch {
       // no saved signature, fine
     }
-  }, []);
+  }, [savedSignatureUrl]);
 
   // Adopt a signature from an uploaded image file
   const onUploadFile = (f: File | null) => {
@@ -336,7 +404,7 @@ const SignerFill = ({ token }: { token: string }) => {
     setSubmitting(true);
     setSubmitError(null);
     try {
-      const res = await fetch(`/api/signet/sign/${token}`, {
+      const res = await fetch(base, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
@@ -352,13 +420,29 @@ const SignerFill = ({ token }: { token: string }) => {
         completed?: boolean;
       };
       setCompletedAll(body.completed === true);
-      try {
-        localStorage.setItem(
-          SIG_STORAGE_KEY,
-          JSON.stringify({ name, image: activeImage ?? null, kind: mode }),
-        );
-      } catch {
-        // storing the adopted signature is best-effort
+      // remember the adopted signature for next time: to the signed-in user's
+      // account when available (reused across devices), else to this device
+      if (savedSignatureUrl) {
+        void fetch(savedSignatureUrl, {
+          method: "PUT",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            typedName: mode === "type" ? name : null,
+            image: activeImage ?? null,
+            mode,
+          }),
+        }).catch(() => {
+          // saving the signature is best-effort
+        });
+      } else {
+        try {
+          localStorage.setItem(
+            SIG_STORAGE_KEY,
+            JSON.stringify({ name, image: activeImage ?? null, kind: mode }),
+          );
+        } catch {
+          // storing the adopted signature is best-effort
+        }
       }
       setDone(true);
     } catch {
@@ -371,7 +455,7 @@ const SignerFill = ({ token }: { token: string }) => {
   const decline = async () => {
     setDeclining(true);
     try {
-      const res = await fetch(`/api/signet/sign/${token}/decline`, {
+      const res = await fetch(`${base}/decline`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
@@ -467,17 +551,25 @@ const SignerFill = ({ token }: { token: string }) => {
           Thank you. This document has your signature.
         </p>
         <div className="mt-6 flex flex-col items-center justify-center gap-2 sm:flex-row">
-          <a href={`/api/signet/sign/${token}/download`}>
-            <Button className="gap-2">
-              <Download className="size-4" /> Download signed PDF
-            </Button>
-          </a>
-          {(completedAll || data.documentCompleted) && (
-            <a href={`/api/signet/sign/${token}/certificate`}>
-              <Button variant="outline" className="gap-2">
-                <FileCheck className="size-4" /> Certificate of completion
-              </Button>
+          {backHref ? (
+            <a href={backHref}>
+              <Button className="gap-2">View document</Button>
             </a>
+          ) : (
+            <>
+              <a href={`${base}/download`}>
+                <Button className="gap-2">
+                  <Download className="size-4" /> Download signed PDF
+                </Button>
+              </a>
+              {(completedAll || data.documentCompleted) && (
+                <a href={`${base}/certificate`}>
+                  <Button variant="outline" className="gap-2">
+                    <FileCheck className="size-4" /> Certificate of completion
+                  </Button>
+                </a>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -516,18 +608,14 @@ const SignerFill = ({ token }: { token: string }) => {
       >
         <span className="font-medium text-sm">Adopt your signature</span>
         <div className="mt-3 inline-flex rounded-lg border border-border bg-muted/50 p-1 text-sm">
-          <TabButton active={mode === "type"} onClick={() => setMode("type")}>
-            Type
-          </TabButton>
-          <TabButton active={mode === "draw"} onClick={() => setMode("draw")}>
-            Draw
-          </TabButton>
-          <TabButton
-            active={mode === "upload"}
-            onClick={() => setMode("upload")}
-          >
-            Upload
-          </TabButton>
+          {(coarsePointer
+            ? (["draw", "type", "upload"] as const)
+            : (["type", "draw", "upload"] as const)
+          ).map((m) => (
+            <TabButton key={m} active={mode === m} onClick={() => setMode(m)}>
+              {m === "type" ? "Type" : m === "draw" ? "Draw" : "Upload"}
+            </TabButton>
+          ))}
         </div>
 
         {mode === "type" && (
