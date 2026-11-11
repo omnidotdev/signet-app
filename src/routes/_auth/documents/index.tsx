@@ -180,11 +180,14 @@ function DocumentsPage() {
                 <FileText className="size-5 shrink-0 text-muted-foreground" />
                 <div className="min-w-0 flex-1">
                   {renamingId === doc.id ? (
-                    <div className="flex items-center gap-1.5">
+                    // Same height as the display row below (h-7) so switching
+                    // into the rename field never shifts the row, and the field
+                    // stays aligned with the status and actions on the right
+                    <div className="flex h-7 items-center gap-1.5">
                       <input
                         // biome-ignore lint/a11y/noAutofocus: focus the field the user just chose to edit
                         autoFocus
-                        className="input h-8 py-1"
+                        className="input h-7 min-w-0 flex-1 py-0 text-sm"
                         value={draftName}
                         onChange={(e) => setDraftName(e.target.value)}
                         onKeyDown={(e) => {
@@ -197,7 +200,7 @@ function DocumentsPage() {
                         aria-label="Save name"
                         disabled={renameMutation.isPending}
                         onClick={() => commitRename(doc.id)}
-                        className="inline-flex size-8 shrink-0 items-center justify-center rounded-md text-primary hover:bg-primary/10"
+                        className="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-primary hover:bg-primary/10"
                       >
                         <Check className="size-4" />
                       </button>
@@ -205,13 +208,13 @@ function DocumentsPage() {
                         type="button"
                         aria-label="Cancel rename"
                         onClick={() => setRenamingId(null)}
-                        className="inline-flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted"
+                        className="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted"
                       >
                         <X className="size-4" />
                       </button>
                     </div>
                   ) : (
-                    <div className="group flex items-center gap-1.5">
+                    <div className="group flex h-7 items-center gap-1.5">
                       <Link
                         to="/documents/$id"
                         params={{ id: doc.id }}
