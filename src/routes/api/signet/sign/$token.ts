@@ -10,9 +10,14 @@ import { signetApiUrl } from "@/lib/signet/config";
 export const Route = createFileRoute("/api/signet/sign/$token")({
   server: {
     handlers: {
-      // the signer's document, fields, and status
-      GET: async ({ params }) =>
-        fetch(`${signetApiUrl()}/api/sign/${params.token}`),
+      // the signer's document, fields, and status; forward an access code when
+      // the signer has entered one (kept in a header, never the URL)
+      GET: async ({ request, params }) => {
+        const code = request.headers.get("x-signet-access-code");
+        return fetch(`${signetApiUrl()}/api/sign/${params.token}`, {
+          headers: code ? { "x-signet-access-code": code } : {},
+        });
+      },
       // the signer applies their signature
       POST: async ({ request, params }) =>
         fetch(`${signetApiUrl()}/sign/${params.token}`, {

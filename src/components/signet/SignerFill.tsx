@@ -5,6 +5,7 @@ import {
   Download,
   FileCheck,
   Loader2,
+  Lock,
   UploadCloud,
 } from "lucide-react";
 import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
@@ -62,8 +63,11 @@ const initialsOf = (name: string) =>
 const SignerFill = ({ token }: { token: string }) => {
   const [data, setData] = useState<FillData | null>(null);
   const [state, setState] = useState<
-    "loading" | "error" | "notfound" | "ready"
+    "loading" | "error" | "notfound" | "locked" | "ready"
   >("loading");
+  const [accessCode, setAccessCode] = useState("");
+  const [codeError, setCodeError] = useState(false);
+  const [unlocking, setUnlocking] = useState(false);
   const [pages, setPages] = useState<RenderedPage[]>([]);
   const [mode, setMode] = useState<"type" | "draw" | "upload">("type");
   const [typedName, setTypedName] = useState("");
@@ -84,30 +88,46 @@ const SignerFill = ({ token }: { token: string }) => {
   const lastRef = useRef<[number, number]>([0, 0]);
   const cursorRef = useRef(-1);
 
-  // Load the signer's fill data
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
+  // Load the signer's fill data, forwarding an access code when one is entered
+  const load = useCallback(
+    async (code?: string): Promise<void> => {
       try {
-        const res = await fetch(`/api/signet/sign/${token}`);
+        const res = await fetch(`/api/signet/sign/${token}`, {
+          headers: code ? { "x-signet-access-code": code } : {},
+        });
         if (res.status === 404) {
-          if (!cancelled) setState("notfound");
+          setState("notfound");
+          return;
+        }
+        if (res.status === 401) {
+          setCodeError(Boolean(code));
+          setState("locked");
           return;
         }
         if (!res.ok) throw new Error();
         const body = (await res.json()) as FillData;
-        if (cancelled) return;
         setData(body);
         setTypedName(body.signerName);
         setState("ready");
       } catch {
-        if (!cancelled) setState("error");
+        setState("error");
       }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [token]);
+    },
+    [token],
+  );
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const submitCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!accessCode.trim() || unlocking) return;
+    setUnlocking(true);
+    setCodeError(false);
+    await load(accessCode.trim());
+    setUnlocking(false);
+  };
 
   // Restore a signature adopted earlier on this device
   useEffect(() => {
@@ -311,6 +331,7 @@ const SignerFill = ({ token }: { token: string }) => {
           signatureImage: activeImage ? activeImage.split(",")[1] : null,
           textValues,
           consent: true,
+          accessCode: accessCode.trim() || undefined,
         }),
       });
       if (!res.ok) throw new Error();
@@ -346,6 +367,42 @@ const SignerFill = ({ token }: { token: string }) => {
   }
   if (state === "error") {
     return <Centered>Could not load the document. Please try again.</Centered>;
+  }
+  if (state === "locked") {
+    return (
+      <div className="mx-auto w-full max-w-sm px-5 py-20 text-center">
+        <Lock className="mx-auto size-8 text-muted-foreground" />
+        <h1 className="mt-4 font-semibold text-xl tracking-tight">
+          Enter your access code
+        </h1>
+        <p className="mt-2 text-muted-foreground text-sm">
+          The sender protected this document with an access code. Enter the code
+          they shared with you to open it.
+        </p>
+        <form onSubmit={submitCode} className="mt-6">
+          <input
+            className="input text-center"
+            value={accessCode}
+            onChange={(e) => setAccessCode(e.target.value)}
+            placeholder="Access code"
+            // biome-ignore lint/a11y/noAutofocus: a single-purpose unlock screen
+            autoFocus
+          />
+          {codeError && (
+            <p className="mt-2 text-destructive text-sm">
+              That code is not correct. Please try again.
+            </p>
+          )}
+          <Button
+            type="submit"
+            className="mt-4 w-full"
+            disabled={unlocking || !accessCode.trim()}
+          >
+            {unlocking ? "Checking..." : "Open document"}
+          </Button>
+        </form>
+      </div>
+    );
   }
   if (!data) return null;
 
