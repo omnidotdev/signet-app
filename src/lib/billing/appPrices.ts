@@ -8,9 +8,11 @@ import type { Price } from "@omnidotdev/providers";
  * configured or unreachable. Billing is an optional integration, so a failure
  * here must never crash the pricing page: it falls back to the free tier.
  *
- * This guard lives in the server function itself (not only the route loader)
- * because a throw here would otherwise surface as an unhandled 500 on
- * client-side navigation, where the loader's catch cannot recover it.
+ * When billing is not configured the provider is a noop that returns an empty
+ * list (see the provider wiring), so no network call is made. The try/catch
+ * additionally guards a configured but unreachable billing service, since a
+ * throw would otherwise surface as an unhandled 500 on client-side navigation
+ * where the route loader's catch cannot recover it.
  */
 export const loadAppPrices = async (): Promise<Price[]> => {
   try {
