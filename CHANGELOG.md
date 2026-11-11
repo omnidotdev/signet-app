@@ -1,5 +1,13 @@
 # @omnidotdev/signet-app
 
+## 0.1.1
+
+### Patch Changes
+
+- [#49](https://github.com/omnidotdev/signet-app/pull/49) [`063908a`](https://github.com/omnidotdev/signet-app/commit/063908a0d522f75804d87f7699bbcca006d439f6) Thanks [@coopbri](https://github.com/coopbri)! - fix(deps): update better-auth to 1.7.7
+
+  Pulls in the upstream security fix released in the 1.7.3 to 1.7.7 range.
+
 ## 0.1.0
 
 ### Minor Changes
