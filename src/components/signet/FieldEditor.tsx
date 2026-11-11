@@ -4,13 +4,25 @@ import {
   CalendarDays,
   Loader2,
   PenLine,
+  Pencil,
+  Plus,
   SquareCheck,
+  Trash2,
   Type as TypeIcon,
   X,
 } from "lucide-react";
 import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+
+import ConfirmDialog from "@/components/signet/ConfirmDialog";
+import {
+  DialogBackdrop,
+  DialogContent,
+  DialogDescription,
+  DialogRoot,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 type FieldType = "signature" | "initials" | "date" | "text" | "checkbox";
 
@@ -83,7 +95,19 @@ const FieldEditor = ({ token }: { token: string }) => {
   const [pages, setPages] = useState<RenderedPage[]>([]);
   const [fields, setFields] = useState<EditorField[]>([]);
   const [activeSigner, setActiveSigner] = useState<string | null>(null);
+  // signers are held separately from `data` so adding/editing/removing one does
+  // not re-render the PDF
+  const [signers, setSigners] = useState<EditorSigner[]>([]);
   const [addType, setAddType] = useState<FieldType | null>(null);
+  // the signer dialog (add a new signer, or edit an existing one), and the
+  // pending removal awaiting confirmation
+  const [signerForm, setSignerForm] = useState<{
+    id: string | null;
+    name: string;
+    email: string;
+  } | null>(null);
+  const [signerBusy, setSignerBusy] = useState(false);
+  const [removeTarget, setRemoveTarget] = useState<EditorSigner | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [sending, setSending] = useState(false);
@@ -107,6 +131,7 @@ const FieldEditor = ({ token }: { token: string }) => {
         const body = (await res.json()) as EditorData;
         if (cancelled) return;
         setData(body);
+        setSigners(body.signers);
         setFields(body.fields.map((f) => ({ ...f, key: uid() })));
         setActiveSigner(body.signers[0]?.id ?? null);
         setState("ready");
@@ -160,9 +185,84 @@ const FieldEditor = ({ token }: { token: string }) => {
 
   const signerColor = useCallback(
     (signerId: string | null) =>
-      data?.signers.find((s) => s.id === signerId)?.color ?? "#be6221",
-    [data],
+      signers.find((s) => s.id === signerId)?.color ?? "#be6221",
+    [signers],
   );
+
+  // Add a signer to this draft, then open it for naming
+  const addSigner = async () => {
+    setSignerBusy(true);
+    try {
+      const res = await fetch(`/api/signet/documents/${token}/signers`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name: "New signer" }),
+      });
+      if (!res.ok) throw new Error();
+      const body = (await res.json()) as { signer: EditorSigner };
+      setSigners((prev) => [...prev, body.signer]);
+      setSignerForm({ id: body.signer.id, name: body.signer.name, email: "" });
+    } catch {
+      toast.error("Could not add a signer.");
+    } finally {
+      setSignerBusy(false);
+    }
+  };
+
+  // Save the signer dialog (name/email) for the signer it targets
+  const saveSigner = async () => {
+    if (!signerForm) return;
+    const name = signerForm.name.trim();
+    if (!name) return;
+    setSignerBusy(true);
+    try {
+      const res = await fetch(
+        `/api/signet/documents/${token}/signers/${signerForm.id}`,
+        {
+          method: "PATCH",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ name, email: signerForm.email.trim() }),
+        },
+      );
+      if (!res.ok) throw new Error();
+      setSigners((prev) =>
+        prev.map((s) =>
+          s.id === signerForm.id
+            ? { ...s, name, email: signerForm.email.trim() || null }
+            : s,
+        ),
+      );
+      setSignerForm(null);
+    } catch {
+      toast.error("Could not save this signer.");
+    } finally {
+      setSignerBusy(false);
+    }
+  };
+
+  // Remove a signer (and the fields assigned to them)
+  const removeSigner = async (target: EditorSigner) => {
+    setSignerBusy(true);
+    try {
+      const res = await fetch(
+        `/api/signet/documents/${token}/signers/${target.id}`,
+        { method: "DELETE" },
+      );
+      if (!res.ok) throw new Error();
+      setSigners((prev) => prev.filter((s) => s.id !== target.id));
+      setFields((prev) => prev.filter((f) => f.signerId !== target.id));
+      setActiveSigner((cur) =>
+        cur === target.id
+          ? (signers.find((s) => s.id !== target.id)?.id ?? null)
+          : cur,
+      );
+      setRemoveTarget(null);
+    } catch {
+      toast.error("Could not remove this signer.");
+    } finally {
+      setSignerBusy(false);
+    }
+  };
 
   // Add a field by clicking the page when a type is armed
   const onPageClick = (
@@ -342,7 +442,7 @@ const FieldEditor = ({ token }: { token: string }) => {
           ))}
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          {data.signers.length > 1 && (
+          {signers.length > 1 && (
             <label className="flex items-center gap-2 text-sm">
               <span className="text-muted-foreground">Signer</span>
               <select
@@ -355,7 +455,7 @@ const FieldEditor = ({ token }: { token: string }) => {
                 }
                 onChange={(e) => assignSelected(e.target.value)}
               >
-                {data.signers.map((s) => (
+                {signers.map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.name}
                   </option>
@@ -370,6 +470,59 @@ const FieldEditor = ({ token }: { token: string }) => {
           <Button disabled={sending} onClick={sendNow}>
             {sending ? "Sending..." : "Save and send"}
           </Button>
+        </div>
+
+        {/* Signer roster: add, edit, or remove signers on this draft */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-muted-foreground text-xs uppercase tracking-wide">
+            Signers
+          </span>
+          {signers.map((s) => (
+            <span
+              key={s.id}
+              className="inline-flex items-center gap-1.5 rounded-full border border-border py-1 pr-1 pl-2.5 text-sm"
+            >
+              <span
+                className="size-2.5 shrink-0 rounded-full"
+                style={{ background: s.color ?? "#be6221" }}
+              />
+              <span className="max-w-[12rem] truncate font-medium">
+                {s.name}
+              </span>
+              <button
+                type="button"
+                aria-label={`Edit ${s.name}`}
+                onClick={() =>
+                  setSignerForm({
+                    id: s.id,
+                    name: s.name,
+                    email: s.email ?? "",
+                  })
+                }
+                className="inline-flex size-6 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                <Pencil className="size-3.5" />
+              </button>
+              {signers.length > 1 && (
+                <button
+                  type="button"
+                  aria-label={`Remove ${s.name}`}
+                  onClick={() => setRemoveTarget(s)}
+                  className="inline-flex size-6 items-center justify-center rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                >
+                  <Trash2 className="size-3.5" />
+                </button>
+              )}
+            </span>
+          ))}
+          <button
+            type="button"
+            disabled={signerBusy}
+            onClick={addSigner}
+            className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 px-2.5 py-1 font-medium text-primary text-sm hover:bg-primary/10 disabled:opacity-60"
+          >
+            <Plus className="size-4" /> Add signer
+          </button>
         </div>
       </div>
 
@@ -420,6 +573,90 @@ const FieldEditor = ({ token }: { token: string }) => {
           })
         )}
       </div>
+
+      {/* Add or edit a signer */}
+      <DialogRoot
+        open={signerForm !== null}
+        onOpenChange={(e) => {
+          if (signerBusy) return;
+          if (!e.open) setSignerForm(null);
+        }}
+        closeOnEscape={!signerBusy}
+        closeOnInteractOutside={!signerBusy}
+      >
+        <DialogBackdrop />
+        <DialogContent>
+          <DialogTitle>Signer</DialogTitle>
+          <DialogDescription>
+            Name the signer, and optionally add their email so they receive a
+            signing link when you send.
+          </DialogDescription>
+          <form
+            className="mt-4 flex flex-col gap-3"
+            onSubmit={(e) => {
+              e.preventDefault();
+              saveSigner();
+            }}
+          >
+            <label className="flex flex-col gap-1 text-sm">
+              <span className="font-medium">Name</span>
+              <input
+                className="input"
+                value={signerForm?.name ?? ""}
+                onChange={(e) =>
+                  setSignerForm((f) => (f ? { ...f, name: e.target.value } : f))
+                }
+                placeholder="Full name"
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-sm">
+              <span className="font-medium">Email</span>
+              <input
+                className="input"
+                type="email"
+                value={signerForm?.email ?? ""}
+                onChange={(e) =>
+                  setSignerForm((f) =>
+                    f ? { ...f, email: e.target.value } : f,
+                  )
+                }
+                placeholder="name@example.com"
+              />
+            </label>
+            <div className="mt-2 flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                disabled={signerBusy}
+                onClick={() => setSignerForm(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={signerBusy || !signerForm?.name.trim()}
+              >
+                {signerBusy ? "Saving..." : "Save"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </DialogRoot>
+
+      <ConfirmDialog
+        open={removeTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setRemoveTarget(null);
+        }}
+        title={`Remove ${removeTarget?.name ?? "signer"}?`}
+        description="Their fields on this document will be removed too. This cannot be undone."
+        confirmLabel="Remove signer"
+        destructive
+        busy={signerBusy}
+        onConfirm={() => {
+          if (removeTarget) removeSigner(removeTarget);
+        }}
+      />
     </div>
   );
 };
