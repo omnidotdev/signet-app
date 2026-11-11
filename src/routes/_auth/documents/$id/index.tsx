@@ -165,7 +165,7 @@ function DocumentDetailPage() {
             >
               <Button className="gap-2">
                 <Download className="size-4" />
-                {data.hasSignedPdf ? "Download signed PDF" : "Open document"}
+                {data.hasSignedPdf ? "Download signed PDF" : "Download PDF"}
               </Button>
             </a>
             {data.status === "completed" && (
@@ -210,6 +210,16 @@ function DocumentDetailPage() {
                   : "Remind all"}
               </Button>
             )}
+          </div>
+
+          {/* Document preview */}
+          <h2 className="mt-10 font-medium text-lg">Document</h2>
+          <div className="mt-3 overflow-hidden rounded-2xl border border-border bg-card">
+            <iframe
+              title={`${data.name} preview`}
+              src={`/api/signet/documents/${data.id}/file?disposition=inline`}
+              className="h-[32rem] w-full sm:h-[44rem]"
+            />
           </div>
 
           {/* Signers */}
