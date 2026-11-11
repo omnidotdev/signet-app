@@ -24,7 +24,15 @@ import {
 
 interface Field {
   id: string;
-  type: "signature" | "initials" | "date" | "text" | "checkbox";
+  type:
+    | "signature"
+    | "initials"
+    | "date"
+    | "text"
+    | "checkbox"
+    | "dropdown"
+    | "radio";
+  options?: string[] | null;
   page: number;
   x: number;
   y: number;
@@ -344,9 +352,15 @@ const SignerFill = ({
   const tourFields = useMemo(
     () =>
       (data?.fields ?? [])
-        // dates fill automatically and checkboxes are optional, so neither is
-        // part of the required-field tour
-        .filter((f) => f.type !== "date" && f.type !== "checkbox")
+        // dates fill automatically, and checkbox/dropdown/radio are optional
+        // selections, so none of them is part of the required-field tour
+        .filter(
+          (f) =>
+            f.type !== "date" &&
+            f.type !== "checkbox" &&
+            f.type !== "dropdown" &&
+            f.type !== "radio",
+        )
         .sort((a, b) => a.page - b.page || b.y - a.y),
     [data],
   );
@@ -949,6 +963,54 @@ const FieldOverlay = ({
           <Check className="size-[80%] text-primary" strokeWidth={3} />
         )}
       </button>
+    );
+  }
+
+  if (field.type === "dropdown") {
+    return (
+      <div
+        style={style}
+        className={`overflow-hidden rounded border border-primary bg-primary/10 ${ring}`}
+      >
+        <select
+          data-fid={field.id}
+          value={textValue}
+          onChange={(e) => onText(e.target.value)}
+          className="size-full border-0 bg-transparent px-1 text-slate-800"
+        >
+          <option value="">Select...</option>
+          {(field.options ?? []).map((o) => (
+            <option key={o} value={o}>
+              {o}
+            </option>
+          ))}
+        </select>
+      </div>
+    );
+  }
+
+  if (field.type === "radio") {
+    return (
+      <div
+        style={style}
+        data-fid={field.id}
+        className={`flex items-center gap-1 overflow-hidden rounded border border-primary bg-primary/10 px-1 ${ring}`}
+      >
+        {(field.options ?? []).map((o) => (
+          <button
+            key={o}
+            type="button"
+            onClick={() => onText(o)}
+            className={`truncate rounded px-1.5 py-0.5 text-xs ${
+              textValue === o
+                ? "bg-primary text-primary-foreground"
+                : "text-slate-700 hover:bg-primary/20"
+            }`}
+          >
+            {o}
+          </button>
+        ))}
+      </div>
     );
   }
 

@@ -2,6 +2,8 @@ import { Button } from "@omnidotdev/thornberry/button";
 import { useNavigate } from "@tanstack/react-router";
 import {
   CalendarDays,
+  ChevronDown,
+  CircleDot,
   Loader2,
   PenLine,
   Pencil,
@@ -24,7 +26,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-type FieldType = "signature" | "initials" | "date" | "text" | "checkbox";
+type FieldType =
+  | "signature"
+  | "initials"
+  | "date"
+  | "text"
+  | "checkbox"
+  | "dropdown"
+  | "radio";
 
 interface EditorField {
   key: string;
@@ -36,6 +45,8 @@ interface EditorField {
   y: number;
   width: number;
   height: number;
+  /** choices for a dropdown or radio field */
+  options?: string[] | null;
 }
 interface EditorSigner {
   id: string;
@@ -68,12 +79,17 @@ const DEFAULTS: Record<FieldType, { w: number; h: number }> = {
   date: { w: 120, h: 24 },
   text: { w: 150, h: 26 },
   checkbox: { w: 22, h: 22 },
+  dropdown: { w: 150, h: 26 },
+  radio: { w: 150, h: 26 },
 };
+const DEFAULT_OPTIONS = ["Option 1", "Option 2"];
 const TYPE_META: { type: FieldType; label: string; icon: typeof PenLine }[] = [
   { type: "signature", label: "Signature", icon: PenLine },
   { type: "date", label: "Date", icon: CalendarDays },
   { type: "initials", label: "Initials", icon: TypeIcon },
   { type: "text", label: "Text", icon: TypeIcon },
+  { type: "dropdown", label: "Dropdown", icon: ChevronDown },
+  { type: "radio", label: "Radio", icon: CircleDot },
   { type: "checkbox", label: "Checkbox", icon: SquareCheck },
 ];
 
@@ -288,6 +304,10 @@ const FieldEditor = ({ token }: { token: string }) => {
         y: clamp(yPt, 0, pg.heightPt - def.h),
         width: def.w,
         height: def.h,
+        options:
+          addType === "dropdown" || addType === "radio"
+            ? [...DEFAULT_OPTIONS]
+            : undefined,
       },
     ]);
     setSelected(key);
@@ -352,6 +372,16 @@ const FieldEditor = ({ token }: { token: string }) => {
 
   const removeField = (key: string) =>
     setFields((prev) => prev.filter((f) => f.key !== key));
+  const selectedField = fields.find((f) => f.key === selected);
+  const setSelectedOptions = (raw: string) => {
+    const options = raw
+      .split(",")
+      .map((o) => o.trim())
+      .filter(Boolean);
+    setFields((prev) =>
+      prev.map((f) => (f.key === selected ? { ...f, options } : f)),
+    );
+  };
   const assignSelected = (signerId: string) => {
     if (selected)
       setFields((prev) =>
@@ -461,6 +491,18 @@ const FieldEditor = ({ token }: { token: string }) => {
                   </option>
                 ))}
               </select>
+            </label>
+          )}
+          {(selectedField?.type === "dropdown" ||
+            selectedField?.type === "radio") && (
+            <label className="flex min-w-0 flex-1 items-center gap-2 text-sm sm:flex-none">
+              <span className="text-muted-foreground">Options</span>
+              <input
+                className="input h-9 min-w-0 flex-1 py-1 sm:w-64"
+                value={(selectedField.options ?? []).join(", ")}
+                onChange={(e) => setSelectedOptions(e.target.value)}
+                placeholder="Comma-separated choices"
+              />
             </label>
           )}
           <span className="flex-1" />
