@@ -48,6 +48,7 @@ import { Route as ApiSignetDocumentsIdFieldsRouteImport } from './routes/api/sig
 import { Route as ApiSignetDocumentsIdEditorRouteImport } from './routes/api/signet/documents/$id/editor'
 import { Route as ApiSignetDocumentsIdCertificateRouteImport } from './routes/api/signet/documents/$id/certificate'
 import { Route as AuthAtChar123workspaceSlugChar125ResourceSlugChar126SettingsRouteImport } from './routes/_auth/@{$workspaceSlug}/$resourceSlug/~/settings'
+import { Route as ApiSignetDocumentsIdSignersSignerIdRouteImport } from './routes/api/signet/documents/$id/signers/$signerId'
 import { Route as ApiSignetDocumentsIdSignAsMeDeclineRouteImport } from './routes/api/signet/documents/$id/sign-as-me/decline'
 
 const PricingRoute = PricingRouteImport.update({
@@ -267,6 +268,12 @@ const AuthAtChar123workspaceSlugChar125ResourceSlugChar126SettingsRoute =
       getParentRoute: () => AuthAtChar123workspaceSlugChar125ResourceSlugRoute,
     } as any,
   )
+const ApiSignetDocumentsIdSignersSignerIdRoute =
+  ApiSignetDocumentsIdSignersSignerIdRouteImport.update({
+    id: '/signers/$signerId',
+    path: '/signers/$signerId',
+    getParentRoute: () => ApiSignetDocumentsIdRoute,
+  } as any)
 const ApiSignetDocumentsIdSignAsMeDeclineRoute =
   ApiSignetDocumentsIdSignAsMeDeclineRouteImport.update({
     id: '/decline',
@@ -314,6 +321,7 @@ export interface FileRoutesByFullPath {
   '/api/signet/sign/$token/decline': typeof ApiSignetSignTokenDeclineRoute
   '/api/signet/sign/$token/download': typeof ApiSignetSignTokenDownloadRoute
   '/api/signet/documents/$id/sign-as-me/decline': typeof ApiSignetDocumentsIdSignAsMeDeclineRoute
+  '/api/signet/documents/$id/signers/$signerId': typeof ApiSignetDocumentsIdSignersSignerIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -353,6 +361,7 @@ export interface FileRoutesByTo {
   '/api/signet/sign/$token/decline': typeof ApiSignetSignTokenDeclineRoute
   '/api/signet/sign/$token/download': typeof ApiSignetSignTokenDownloadRoute
   '/api/signet/documents/$id/sign-as-me/decline': typeof ApiSignetDocumentsIdSignAsMeDeclineRoute
+  '/api/signet/documents/$id/signers/$signerId': typeof ApiSignetDocumentsIdSignersSignerIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -396,6 +405,7 @@ export interface FileRoutesById {
   '/api/signet/sign/$token/decline': typeof ApiSignetSignTokenDeclineRoute
   '/api/signet/sign/$token/download': typeof ApiSignetSignTokenDownloadRoute
   '/api/signet/documents/$id/sign-as-me/decline': typeof ApiSignetDocumentsIdSignAsMeDeclineRoute
+  '/api/signet/documents/$id/signers/$signerId': typeof ApiSignetDocumentsIdSignersSignerIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -439,6 +449,7 @@ export interface FileRouteTypes {
     | '/api/signet/sign/$token/decline'
     | '/api/signet/sign/$token/download'
     | '/api/signet/documents/$id/sign-as-me/decline'
+    | '/api/signet/documents/$id/signers/$signerId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -478,6 +489,7 @@ export interface FileRouteTypes {
     | '/api/signet/sign/$token/decline'
     | '/api/signet/sign/$token/download'
     | '/api/signet/documents/$id/sign-as-me/decline'
+    | '/api/signet/documents/$id/signers/$signerId'
   id:
     | '__root__'
     | '/'
@@ -520,6 +532,7 @@ export interface FileRouteTypes {
     | '/api/signet/sign/$token/decline'
     | '/api/signet/sign/$token/download'
     | '/api/signet/documents/$id/sign-as-me/decline'
+    | '/api/signet/documents/$id/signers/$signerId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -810,6 +823,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthAtChar123workspaceSlugChar125ResourceSlugChar126SettingsRouteImport
       parentRoute: typeof AuthAtChar123workspaceSlugChar125ResourceSlugRoute
     }
+    '/api/signet/documents/$id/signers/$signerId': {
+      id: '/api/signet/documents/$id/signers/$signerId'
+      path: '/signers/$signerId'
+      fullPath: '/api/signet/documents/$id/signers/$signerId'
+      preLoaderRoute: typeof ApiSignetDocumentsIdSignersSignerIdRouteImport
+      parentRoute: typeof ApiSignetDocumentsIdRoute
+    }
     '/api/signet/documents/$id/sign-as-me/decline': {
       id: '/api/signet/documents/$id/sign-as-me/decline'
       path: '/decline'
@@ -915,6 +935,7 @@ interface ApiSignetDocumentsIdRouteChildren {
   ApiSignetDocumentsIdSignAsMeRoute: typeof ApiSignetDocumentsIdSignAsMeRouteWithChildren
   ApiSignetDocumentsIdSignedRoute: typeof ApiSignetDocumentsIdSignedRoute
   ApiSignetDocumentsIdTemplateRoute: typeof ApiSignetDocumentsIdTemplateRoute
+  ApiSignetDocumentsIdSignersSignerIdRoute: typeof ApiSignetDocumentsIdSignersSignerIdRoute
 }
 
 const ApiSignetDocumentsIdRouteChildren: ApiSignetDocumentsIdRouteChildren = {
@@ -928,6 +949,8 @@ const ApiSignetDocumentsIdRouteChildren: ApiSignetDocumentsIdRouteChildren = {
     ApiSignetDocumentsIdSignAsMeRouteWithChildren,
   ApiSignetDocumentsIdSignedRoute: ApiSignetDocumentsIdSignedRoute,
   ApiSignetDocumentsIdTemplateRoute: ApiSignetDocumentsIdTemplateRoute,
+  ApiSignetDocumentsIdSignersSignerIdRoute:
+    ApiSignetDocumentsIdSignersSignerIdRoute,
 }
 
 const ApiSignetDocumentsIdRouteWithChildren =

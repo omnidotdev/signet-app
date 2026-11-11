@@ -1,5 +1,5 @@
 import { Button } from "@omnidotdev/thornberry/button";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, createFileRoute, useRouteContext } from "@tanstack/react-router";
 import {
   ArrowLeft,
@@ -15,8 +15,17 @@ import {
   Pencil,
   ShieldCheck,
 } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
 
+import {
+  DialogBackdrop,
+  DialogContent,
+  DialogDescription,
+  DialogRoot,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { canCorrectSigner } from "@/lib/signet/signerCorrection";
 import createMetaTags from "@/lib/util/createMetaTags";
 
 export const Route = createFileRoute("/_auth/documents/$id/")({
@@ -74,6 +83,7 @@ const EVENT_LABEL: Record<string, string> = {
   "document.completed": "Completed and sealed",
   "document.declined": "Declined",
   "document.voided": "Voided",
+  "signer.corrected": "Signer updated",
 };
 const labelFor = (type: string) =>
   EVENT_LABEL[type] ?? type.replace(/^[a-z]+\./, "").replace(/[._]/g, " ");
@@ -137,6 +147,64 @@ function DocumentDetailPage() {
     remind.isPending && typeof remind.variables === "string"
       ? remind.variables
       : null;
+
+  const queryClient = useQueryClient();
+  // the pending signer being corrected (typo fix or email reassignment), or null
+  const [editing, setEditing] = useState<DetailSigner | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+
+  const correctSigner = useMutation({
+    mutationFn: async (vars: {
+      signerId: string;
+      name: string;
+      email: string;
+    }) => {
+      const res = await fetch(
+        `/api/signet/documents/${id}/signers/${vars.signerId}`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            name: vars.name,
+            email: vars.email.trim() || null,
+          }),
+        },
+      );
+      if (!res.ok) throw new Error("correct_failed");
+      return (await res.json()) as {
+        ok: boolean;
+        signer: { email: string | null; reissued: boolean };
+      };
+    },
+    onSuccess: (r) => {
+      setEditing(null);
+      queryClient.invalidateQueries({
+        queryKey: ["signet", "document", id],
+      });
+      if (r.signer?.reissued && r.signer.email) {
+        toast.success(
+          `Updated. A new signing link was sent to ${r.signer.email}.`,
+        );
+      } else {
+        toast.success("Signer updated.");
+      }
+    },
+    onError: () => toast.error("Could not update this signer."),
+  });
+
+  const openEdit = (s: DetailSigner) => {
+    setEditing(s);
+    setEditName(s.name);
+    setEditEmail(s.email ?? "");
+  };
+
+  const submitEdit = () => {
+    if (!editing) return;
+    const name = editName.trim();
+    if (!name) return;
+    correctSigner.mutate({ signerId: editing.id, name, email: editEmail });
+  };
 
   return (
     <div className="mx-auto w-full max-w-3xl px-5 py-10 sm:py-14">
@@ -289,6 +357,18 @@ function DocumentDetailPage() {
                       {s.status}
                     </span>
                   )}
+                  {canCorrectSigner(data.status, s.status) && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      aria-label={`Edit ${s.name}`}
+                      className="shrink-0 gap-1.5"
+                      onClick={() => openEdit(s)}
+                    >
+                      <Pencil className="size-3.5" />
+                      <span className="hidden sm:inline">Edit</span>
+                    </Button>
+                  )}
                 </li>
               );
             })}
@@ -343,6 +423,70 @@ function DocumentDetailPage() {
           </div>
         </>
       )}
+
+      {/* Correct a pending signer: fix a name or reassign the email. Changing
+          the email reissues the signing link and re-sends it. */}
+      <DialogRoot
+        open={editing !== null}
+        onOpenChange={(e) => {
+          if (correctSigner.isPending) return;
+          if (!e.open) setEditing(null);
+        }}
+        closeOnEscape={!correctSigner.isPending}
+        closeOnInteractOutside={!correctSigner.isPending}
+      >
+        <DialogBackdrop />
+        <DialogContent>
+          <DialogTitle>Edit signer</DialogTitle>
+          <DialogDescription>
+            Fix a name, or reassign the email. Changing the email sends a fresh
+            signing link and invalidates the old one.
+          </DialogDescription>
+          <form
+            className="mt-4 flex flex-col gap-3"
+            onSubmit={(e) => {
+              e.preventDefault();
+              submitEdit();
+            }}
+          >
+            <label className="flex flex-col gap-1 text-sm">
+              <span className="font-medium">Name</span>
+              <input
+                className="input"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                placeholder="Full name"
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-sm">
+              <span className="font-medium">Email</span>
+              <input
+                className="input"
+                type="email"
+                value={editEmail}
+                onChange={(e) => setEditEmail(e.target.value)}
+                placeholder="name@example.com"
+              />
+            </label>
+            <div className="mt-2 flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                disabled={correctSigner.isPending}
+                onClick={() => setEditing(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={correctSigner.isPending || !editName.trim()}
+              >
+                {correctSigner.isPending ? "Saving..." : "Save changes"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </DialogRoot>
     </div>
   );
 }
