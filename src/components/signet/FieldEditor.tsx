@@ -4,6 +4,7 @@ import {
   CalendarDays,
   Loader2,
   PenLine,
+  SquareCheck,
   Type as TypeIcon,
   X,
 } from "lucide-react";
@@ -11,7 +12,7 @@ import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
-type FieldType = "signature" | "initials" | "date" | "text";
+type FieldType = "signature" | "initials" | "date" | "text" | "checkbox";
 
 interface EditorField {
   key: string;
@@ -54,12 +55,14 @@ const DEFAULTS: Record<FieldType, { w: number; h: number }> = {
   initials: { w: 72, h: 30 },
   date: { w: 120, h: 24 },
   text: { w: 150, h: 26 },
+  checkbox: { w: 22, h: 22 },
 };
 const TYPE_META: { type: FieldType; label: string; icon: typeof PenLine }[] = [
   { type: "signature", label: "Signature", icon: PenLine },
   { type: "date", label: "Date", icon: CalendarDays },
   { type: "initials", label: "Initials", icon: TypeIcon },
   { type: "text", label: "Text", icon: TypeIcon },
+  { type: "checkbox", label: "Checkbox", icon: SquareCheck },
 ];
 
 const base64ToBytes = (b64: string) =>
@@ -467,12 +470,19 @@ const FieldBox = ({
       }}
       className="flex cursor-move touch-none items-center justify-center overflow-visible rounded border"
     >
-      <span
-        className="pointer-events-none select-none font-semibold text-[0.6rem] uppercase tracking-wide"
-        style={{ color }}
-      >
-        {field.type}
-      </span>
+      {field.type === "checkbox" ? (
+        <SquareCheck
+          className="pointer-events-none size-3.5"
+          style={{ color }}
+        />
+      ) : (
+        <span
+          className="pointer-events-none select-none font-semibold text-[0.6rem] uppercase tracking-wide"
+          style={{ color }}
+        >
+          {field.type}
+        </span>
+      )}
       {selected && (
         <>
           <button

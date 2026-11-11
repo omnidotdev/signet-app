@@ -2,6 +2,7 @@ import { Button } from "@omnidotdev/thornberry/button";
 import {
   ArrowDown,
   ArrowUp,
+  Check,
   CheckCircle2,
   Download,
   FileCheck,
@@ -23,7 +24,7 @@ import {
 
 interface Field {
   id: string;
-  type: "signature" | "initials" | "date" | "text";
+  type: "signature" | "initials" | "date" | "text" | "checkbox";
   page: number;
   x: number;
   y: number;
@@ -343,7 +344,9 @@ const SignerFill = ({
   const tourFields = useMemo(
     () =>
       (data?.fields ?? [])
-        .filter((f) => f.type !== "date")
+        // dates fill automatically and checkboxes are optional, so neither is
+        // part of the required-field tour
+        .filter((f) => f.type !== "date" && f.type !== "checkbox")
         .sort((a, b) => a.page - b.page || b.y - a.y),
     [data],
   );
@@ -928,6 +931,26 @@ const FieldOverlay = ({
   const name = typedName.trim();
   const ring = highlight ? "ring-2 ring-primary ring-offset-2" : "";
   const filledClass = `flex items-center justify-center overflow-hidden rounded border border-primary ${ring}`;
+
+  if (field.type === "checkbox") {
+    const checked = textValue === "true";
+    return (
+      <button
+        type="button"
+        data-fid={field.id}
+        aria-pressed={checked}
+        onClick={() => onText(checked ? "" : "true")}
+        style={style}
+        className={`flex items-center justify-center rounded border border-primary ${
+          checked ? "bg-primary/20" : "bg-primary/10"
+        } ${ring}`}
+      >
+        {checked && (
+          <Check className="size-[80%] text-primary" strokeWidth={3} />
+        )}
+      </button>
+    );
+  }
 
   if (field.type === "date") {
     return (
