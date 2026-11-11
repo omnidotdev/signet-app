@@ -13,11 +13,14 @@ import {
   LayoutTemplate,
   PenLine,
   Pencil,
+  Plus,
   ShieldCheck,
+  Trash2,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import ConfirmDialog from "@/components/signet/ConfirmDialog";
 import PdfViewer from "@/components/signet/PdfViewer";
 import {
   DialogBackdrop,
@@ -207,6 +210,51 @@ function DocumentDetailPage() {
     correctSigner.mutate({ signerId: editing.id, name, email: editEmail });
   };
 
+  // add a late signer (approver) to a sent document
+  const [addOpen, setAddOpen] = useState(false);
+  const [addName, setAddName] = useState("");
+  const [addEmail, setAddEmail] = useState("");
+  const addSigner = useMutation({
+    mutationFn: async (vars: { name: string; email: string }) => {
+      const res = await fetch(`/api/signet/documents/${id}/signers`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          name: vars.name,
+          email: vars.email || undefined,
+        }),
+      });
+      if (!res.ok) throw new Error("add_failed");
+    },
+    onSuccess: () => {
+      setAddOpen(false);
+      setAddName("");
+      setAddEmail("");
+      queryClient.invalidateQueries({ queryKey: ["signet", "document", id] });
+      toast.success("Signer added.");
+    },
+    onError: () => toast.error("Could not add this signer."),
+  });
+
+  // remove a still-pending signer from a sent document
+  const [removeTarget, setRemoveTarget] = useState<DetailSigner | null>(null);
+  const removeSigner = useMutation({
+    mutationFn: async (signerId: string) => {
+      const res = await fetch(
+        `/api/signet/documents/${id}/signers/${signerId}`,
+        { method: "DELETE" },
+      );
+      if (!res.ok) throw new Error("remove_failed");
+    },
+    onSuccess: () => {
+      setRemoveTarget(null);
+      queryClient.invalidateQueries({ queryKey: ["signet", "document", id] });
+      toast.success("Signer removed.");
+    },
+    onError: () =>
+      toast.error("Could not remove this signer. They may have already acted."),
+  });
+
   return (
     <div className="mx-auto w-full max-w-3xl px-5 py-10 sm:py-14">
       <Link
@@ -316,7 +364,24 @@ function DocumentDetailPage() {
           </div>
 
           {/* Signers */}
-          <h2 className="mt-10 font-medium text-lg">Signers</h2>
+          <div className="mt-10 flex items-center justify-between gap-3">
+            <h2 className="font-medium text-lg">Signers</h2>
+            {data.status === "sent" && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="shrink-0 gap-1.5"
+                onClick={() => {
+                  setAddName("");
+                  setAddEmail("");
+                  setAddOpen(true);
+                }}
+              >
+                <Plus className="size-4" />
+                <span className="hidden sm:inline">Add signer</span>
+              </Button>
+            )}
+          </div>
           <ul className="mt-3 divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
             {data.signers.map((s) => {
               const signed = s.status === "signed";
@@ -371,6 +436,17 @@ function DocumentDetailPage() {
                       <span className="hidden sm:inline">Edit</span>
                     </Button>
                   )}
+                  {canCorrectSigner(data.status, s.status) &&
+                    data.signers.length > 1 && (
+                      <button
+                        type="button"
+                        aria-label={`Remove ${s.name}`}
+                        onClick={() => setRemoveTarget(s)}
+                        className="inline-flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                      >
+                        <Trash2 className="size-4" />
+                      </button>
+                    )}
                 </li>
               );
             })}
@@ -489,6 +565,85 @@ function DocumentDetailPage() {
           </form>
         </DialogContent>
       </DialogRoot>
+
+      {/* Add a late signer (approver) to a sent document */}
+      <DialogRoot
+        open={addOpen}
+        onOpenChange={(e) => {
+          if (addSigner.isPending) return;
+          if (!e.open) setAddOpen(false);
+        }}
+        closeOnEscape={!addSigner.isPending}
+        closeOnInteractOutside={!addSigner.isPending}
+      >
+        <DialogBackdrop />
+        <DialogContent>
+          <DialogTitle>Add signer</DialogTitle>
+          <DialogDescription>
+            Add another party to this document. They are emailed a signing link
+            and sign after the current signers.
+          </DialogDescription>
+          <form
+            className="mt-4 flex flex-col gap-3"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const name = addName.trim();
+              if (name) addSigner.mutate({ name, email: addEmail.trim() });
+            }}
+          >
+            <label className="flex flex-col gap-1 text-sm">
+              <span className="font-medium">Name</span>
+              <input
+                className="input"
+                value={addName}
+                onChange={(e) => setAddName(e.target.value)}
+                placeholder="Full name"
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-sm">
+              <span className="font-medium">Email</span>
+              <input
+                className="input"
+                type="email"
+                value={addEmail}
+                onChange={(e) => setAddEmail(e.target.value)}
+                placeholder="name@example.com"
+              />
+            </label>
+            <div className="mt-2 flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                disabled={addSigner.isPending}
+                onClick={() => setAddOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={addSigner.isPending || !addName.trim()}
+              >
+                {addSigner.isPending ? "Adding..." : "Add signer"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </DialogRoot>
+
+      <ConfirmDialog
+        open={removeTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setRemoveTarget(null);
+        }}
+        title={`Remove ${removeTarget?.name ?? "signer"}?`}
+        description="They will be removed from this document and can no longer sign it. This cannot be undone."
+        confirmLabel="Remove signer"
+        destructive
+        busy={removeSigner.isPending}
+        onConfirm={() => {
+          if (removeTarget) removeSigner.mutate(removeTarget.id);
+        }}
+      />
     </div>
   );
 }
