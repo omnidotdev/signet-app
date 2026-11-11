@@ -69,7 +69,7 @@ const Header = () => {
               <Logo className="size-6 text-primary" />
               <h1 className="font-bold text-xl">{app.name}</h1>
             </InternalLink>
-            <EarlyAccessBadge className="hidden self-center sm:inline-flex" />
+            <EarlyAccessBadge className="self-center" />
 
             {auth && (
               <InternalLink
