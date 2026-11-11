@@ -78,13 +78,13 @@ interface RenderedPage {
 
 const SCALE = 1.25;
 const DEFAULTS: Record<FieldType, { w: number; h: number }> = {
-  signature: { w: 170, h: 30 },
-  initials: { w: 72, h: 30 },
-  date: { w: 120, h: 24 },
-  text: { w: 150, h: 26 },
-  checkbox: { w: 22, h: 22 },
-  dropdown: { w: 150, h: 26 },
-  radio: { w: 150, h: 26 },
+  signature: { w: 200, h: 44 },
+  initials: { w: 96, h: 44 },
+  date: { w: 140, h: 32 },
+  text: { w: 170, h: 32 },
+  checkbox: { w: 28, h: 28 },
+  dropdown: { w: 170, h: 32 },
+  radio: { w: 170, h: 32 },
 };
 const DEFAULT_OPTIONS = ["Option 1", "Option 2"];
 // checkboxes and choice fields are optional by default; the rest must be filled
@@ -650,12 +650,13 @@ const FieldEditor = ({ token }: { token: string }) => {
           pages.map((pg, i) => {
             const pageNo = i + 1;
             return (
-              <button
-                type="button"
+              // biome-ignore lint/a11y/noStaticElementInteractions: the page is a pointer-driven placement canvas that must contain interactive field boxes, so it cannot be a native button; nesting interactive content inside a button is invalid and breaks field drag on hydration
+              // biome-ignore lint/a11y/useKeyWithClickEvents: placing a field at pointer coordinates is an inherently pointer-driven canvas gesture with no keyboard-coordinate equivalent; fields are added and then repositioned with pointer drag
+              <div
                 key={pageNo}
                 data-page={pageNo}
                 onClick={(e) => onPageClick(e, pageNo, pg)}
-                className={`relative mx-auto block w-full p-0 shadow-sm ${addType ? "cursor-crosshair" : "cursor-default"}`}
+                className={`relative mx-auto block w-full shadow-sm ${addType ? "cursor-crosshair" : "cursor-default"}`}
                 style={{
                   maxWidth: pg.width,
                   aspectRatio: `${pg.width} / ${pg.height}`,
@@ -682,7 +683,7 @@ const FieldEditor = ({ token }: { token: string }) => {
                       onUp={onPointerUp}
                     />
                   ))}
-              </button>
+              </div>
             );
           })
         )}
@@ -857,7 +858,7 @@ const FieldBox = ({
           </button>
           <div
             onPointerDown={(e) => onDown(e, "resize")}
-            className="absolute -right-1.5 -bottom-1.5 size-3 cursor-se-resize rounded-sm border border-white"
+            className="absolute -right-2 -bottom-2 size-4 cursor-se-resize touch-none rounded-sm border-2 border-white shadow-sm"
             style={{ background: color }}
           />
         </>
