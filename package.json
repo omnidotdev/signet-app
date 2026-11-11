@@ -17,6 +17,7 @@
     "check:routes": "bun scripts/checkRouteGrammar.ts",
     "knip": "knip-bun --tags=-knipignore",
     "pwa:audit": "unlighthouse-ci --site https://localhost:3000",
+    "release": "changeset publish",
     "test": "bun test src",
     "test:watch": "bun test src --watch",
     "test:coverage": "bun test src --coverage",
