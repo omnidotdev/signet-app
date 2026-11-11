@@ -49,6 +49,15 @@ const config = defineConfig(({ command }) => ({
             "Cache-Control": "public, max-age=0, must-revalidate",
           },
         },
+        // The in-app document viewer frames this same-origin endpoint, so it
+        // needs SAMEORIGIN instead of the global DENY (which forbids all
+        // framing). Cross-origin framing stays blocked, so clickjacking
+        // protection holds; every other route keeps DENY
+        "/api/signet/documents/**": {
+          headers: {
+            "X-Frame-Options": "SAMEORIGIN",
+          },
+        },
       },
     }),
     viteTsConfigPaths({
