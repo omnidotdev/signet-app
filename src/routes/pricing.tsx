@@ -47,7 +47,7 @@ const PricingPage = () => {
 
   const tabs = useTabs({ defaultValue: "month" });
 
-  const filteredPrices = prices.filter(
+  const filteredPrices = (prices ?? []).filter(
     (price) => price.recurring?.interval === tabs.value,
   );
 
