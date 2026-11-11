@@ -43,6 +43,7 @@ interface Field {
 interface FillData {
   documentName: string;
   signerName: string;
+  signerColor?: string | null;
   alreadySigned: boolean;
   documentCompleted: boolean;
   waitingFor: string | null;
@@ -833,6 +834,7 @@ const SignerFill = ({
                       typedName={typedName}
                       image={activeImage}
                       highlight={highlightId === f.id}
+                      color={data.signerColor || "#be6221"}
                       textValue={textValues[f.id] ?? ""}
                       onText={(v) =>
                         setTextValues((prev) => ({ ...prev, [f.id]: v }))
@@ -846,21 +848,23 @@ const SignerFill = ({
         )}
       </div>
 
-      {/* Floating guide to the next field, in the guided-signing pattern */}
+      {/* Floating guide to the next field: shown whenever a required field is
+          still unfilled, so it is always discoverable, and the arrow points
+          toward the field (up/down) */}
       {pages.length > 0 && nextField && (
         <button
           type="button"
           onClick={() => focusField(nextField)}
-          className={`fixed bottom-6 left-1/2 z-20 inline-flex -translate-x-1/2 items-center gap-2 rounded-full bg-primary px-5 py-2.5 font-medium text-primary-foreground text-sm shadow-lg transition-opacity duration-200 hover:bg-primary/90 ${
-            guide.show ? "opacity-100" : "pointer-events-none opacity-0"
-          }`}
+          className="fixed bottom-6 left-1/2 z-20 inline-flex -translate-x-1/2 items-center gap-2 rounded-full bg-primary px-5 py-2.5 font-medium text-primary-foreground text-sm shadow-lg transition-colors hover:bg-primary/90"
         >
           {guide.dir === "up" ? (
             <ArrowUp className="size-4" />
           ) : (
             <ArrowDown className="size-4" />
           )}
-          {`Next field (${incompleteCount} left)`}
+          {incompleteCount > 1
+            ? `Next field (${incompleteCount} left)`
+            : "Go to signature"}
         </button>
       )}
 
@@ -917,6 +921,7 @@ const FieldOverlay = ({
   typedName,
   image,
   highlight,
+  color,
   textValue,
   onText,
   onAdoptClick,
@@ -928,23 +933,29 @@ const FieldOverlay = ({
   typedName: string;
   image: string | null;
   highlight: boolean;
+  /** this signer's color, used to tint their fields (Adobe-Sign style) */
+  color: string;
   textValue: string;
   onText: (v: string) => void;
   onAdoptClick: () => void;
 }) => {
   // position proportionally so overlays track the page as it scales to fit
   const pct = (n: number, total: number) => `${(n / total) * 100}%`;
-  const style: React.CSSProperties = {
+  const base: React.CSSProperties = {
     position: "absolute",
     left: pct(field.x, pageWidthPt),
     top: pct(pageHeightPt - field.y - field.height, pageHeightPt),
     width: pct(field.width, pageWidthPt),
     height: pct(field.height, pageHeightPt),
   };
-
+  const tint = `${color}1a`; // ~10% alpha
+  const style: React.CSSProperties = {
+    ...base,
+    borderColor: color,
+    background: tint,
+  };
   const name = typedName.trim();
   const ring = highlight ? "ring-2 ring-primary ring-offset-2" : "";
-  const filledClass = `flex items-center justify-center overflow-hidden rounded border border-primary ${ring}`;
 
   if (field.type === "checkbox") {
     const checked = textValue === "true";
@@ -954,13 +965,15 @@ const FieldOverlay = ({
         data-fid={field.id}
         aria-pressed={checked}
         onClick={() => onText(checked ? "" : "true")}
-        style={style}
-        className={`flex items-center justify-center rounded border border-primary ${
-          checked ? "bg-primary/20" : "bg-primary/10"
-        } ${ring}`}
+        style={{
+          ...base,
+          borderColor: color,
+          background: checked ? `${color}33` : tint,
+        }}
+        className={`flex items-center justify-center rounded border ${ring}`}
       >
         {checked && (
-          <Check className="size-[80%] text-primary" strokeWidth={3} />
+          <Check className="size-[80%]" style={{ color }} strokeWidth={3} />
         )}
       </button>
     );
@@ -968,10 +981,7 @@ const FieldOverlay = ({
 
   if (field.type === "dropdown") {
     return (
-      <div
-        style={style}
-        className={`overflow-hidden rounded border border-primary bg-primary/10 ${ring}`}
-      >
+      <div style={style} className={`overflow-hidden rounded border ${ring}`}>
         <select
           data-fid={field.id}
           value={textValue}
@@ -994,29 +1004,37 @@ const FieldOverlay = ({
       <div
         style={style}
         data-fid={field.id}
-        className={`flex items-center gap-1 overflow-hidden rounded border border-primary bg-primary/10 px-1 ${ring}`}
+        className={`flex items-center gap-1 overflow-hidden rounded border px-1 ${ring}`}
       >
-        {(field.options ?? []).map((o) => (
-          <button
-            key={o}
-            type="button"
-            onClick={() => onText(o)}
-            className={`truncate rounded px-1.5 py-0.5 text-xs ${
-              textValue === o
-                ? "bg-primary text-primary-foreground"
-                : "text-slate-700 hover:bg-primary/20"
-            }`}
-          >
-            {o}
-          </button>
-        ))}
+        {(field.options ?? []).map((o) => {
+          const selected = textValue === o;
+          return (
+            <button
+              key={o}
+              type="button"
+              onClick={() => onText(o)}
+              style={
+                selected ? { background: color, color: "#fff" } : undefined
+              }
+              className={`truncate rounded px-1.5 py-0.5 text-xs ${
+                selected ? "" : "text-slate-700"
+              }`}
+            >
+              {o}
+            </button>
+          );
+        })}
       </div>
     );
   }
 
   if (field.type === "date") {
     return (
-      <div style={style} data-fid={field.id} className={filledClass}>
+      <div
+        style={style}
+        data-fid={field.id}
+        className={`flex items-center justify-center overflow-hidden rounded border ${ring}`}
+      >
         <span className="whitespace-nowrap font-semibold text-slate-800 italic">
           {today}
         </span>
@@ -1026,10 +1044,7 @@ const FieldOverlay = ({
 
   if (field.type === "text") {
     return (
-      <div
-        style={style}
-        className={`overflow-hidden rounded border border-primary bg-primary/10 ${ring}`}
-      >
+      <div style={style} className={`overflow-hidden rounded border ${ring}`}>
         <input
           data-fid={field.id}
           value={textValue}
@@ -1050,9 +1065,13 @@ const FieldOverlay = ({
     <button
       type="button"
       onClick={onAdoptClick}
-      style={style}
+      style={{
+        ...base,
+        borderColor: color,
+        background: filled ? "transparent" : tint,
+      }}
       data-fid={field.id}
-      className={`${filledClass} cursor-pointer ${filled ? "" : "bg-primary/10"}`}
+      className={`flex cursor-pointer items-center justify-center overflow-hidden rounded border ${ring}`}
     >
       {image ? (
         <img src={image} alt="signature" className="max-h-full max-w-full" />
@@ -1061,7 +1080,10 @@ const FieldOverlay = ({
           {mark}
         </span>
       ) : (
-        <span className="font-semibold text-primary text-xs uppercase tracking-wide">
+        <span
+          className="font-semibold text-xs uppercase tracking-wide"
+          style={{ color }}
+        >
           {isInitials ? "Initials" : "Sign"}
         </span>
       )}
