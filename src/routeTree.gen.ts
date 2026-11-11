@@ -32,12 +32,14 @@ import { Route as AuthAtChar123workspaceSlugChar125Char126SettingsRouteImport } 
 import { Route as AuthAtChar123workspaceSlugChar125Char126MembersRouteImport } from './routes/_auth/@{$workspaceSlug}/~/members'
 import { Route as AuthAtChar123workspaceSlugChar125Char126BillingRouteImport } from './routes/_auth/@{$workspaceSlug}/~/billing'
 import { Route as ApiSignetSignTokenDownloadRouteImport } from './routes/api/signet/sign/$token/download'
+import { Route as ApiSignetSignTokenCertificateRouteImport } from './routes/api/signet/sign/$token/certificate'
 import { Route as ApiSignetDocumentsIdSignedRouteImport } from './routes/api/signet/documents/$id/signed'
 import { Route as ApiSignetDocumentsIdSendRouteImport } from './routes/api/signet/documents/$id/send'
 import { Route as ApiSignetDocumentsIdRemindRouteImport } from './routes/api/signet/documents/$id/remind'
 import { Route as ApiSignetDocumentsIdFileRouteImport } from './routes/api/signet/documents/$id/file'
 import { Route as ApiSignetDocumentsIdFieldsRouteImport } from './routes/api/signet/documents/$id/fields'
 import { Route as ApiSignetDocumentsIdEditorRouteImport } from './routes/api/signet/documents/$id/editor'
+import { Route as ApiSignetDocumentsIdCertificateRouteImport } from './routes/api/signet/documents/$id/certificate'
 import { Route as AuthAtChar123workspaceSlugChar125ResourceSlugChar126SettingsRouteImport } from './routes/_auth/@{$workspaceSlug}/$resourceSlug/~/settings'
 
 const PricingRoute = PricingRouteImport.update({
@@ -162,6 +164,12 @@ const ApiSignetSignTokenDownloadRoute =
     path: '/download',
     getParentRoute: () => ApiSignetSignTokenRoute,
   } as any)
+const ApiSignetSignTokenCertificateRoute =
+  ApiSignetSignTokenCertificateRouteImport.update({
+    id: '/certificate',
+    path: '/certificate',
+    getParentRoute: () => ApiSignetSignTokenRoute,
+  } as any)
 const ApiSignetDocumentsIdSignedRoute =
   ApiSignetDocumentsIdSignedRouteImport.update({
     id: '/signed',
@@ -198,6 +206,12 @@ const ApiSignetDocumentsIdEditorRoute =
     path: '/editor',
     getParentRoute: () => ApiSignetDocumentsIdRoute,
   } as any)
+const ApiSignetDocumentsIdCertificateRoute =
+  ApiSignetDocumentsIdCertificateRouteImport.update({
+    id: '/certificate',
+    path: '/certificate',
+    getParentRoute: () => ApiSignetDocumentsIdRoute,
+  } as any)
 const AuthAtChar123workspaceSlugChar125ResourceSlugChar126SettingsRoute =
   AuthAtChar123workspaceSlugChar125ResourceSlugChar126SettingsRouteImport.update(
     {
@@ -230,12 +244,14 @@ export interface FileRoutesByFullPath {
   '/@{$workspaceSlug}/$resourceSlug/': typeof AuthAtChar123workspaceSlugChar125ResourceSlugIndexRoute
   '/documents/$id/': typeof AuthDocumentsIdIndexRoute
   '/@{$workspaceSlug}/$resourceSlug/~/settings': typeof AuthAtChar123workspaceSlugChar125ResourceSlugChar126SettingsRoute
+  '/api/signet/documents/$id/certificate': typeof ApiSignetDocumentsIdCertificateRoute
   '/api/signet/documents/$id/editor': typeof ApiSignetDocumentsIdEditorRoute
   '/api/signet/documents/$id/fields': typeof ApiSignetDocumentsIdFieldsRoute
   '/api/signet/documents/$id/file': typeof ApiSignetDocumentsIdFileRoute
   '/api/signet/documents/$id/remind': typeof ApiSignetDocumentsIdRemindRoute
   '/api/signet/documents/$id/send': typeof ApiSignetDocumentsIdSendRoute
   '/api/signet/documents/$id/signed': typeof ApiSignetDocumentsIdSignedRoute
+  '/api/signet/sign/$token/certificate': typeof ApiSignetSignTokenCertificateRoute
   '/api/signet/sign/$token/download': typeof ApiSignetSignTokenDownloadRoute
 }
 export interface FileRoutesByTo {
@@ -259,12 +275,14 @@ export interface FileRoutesByTo {
   '/@{$workspaceSlug}/$resourceSlug': typeof AuthAtChar123workspaceSlugChar125ResourceSlugIndexRoute
   '/documents/$id': typeof AuthDocumentsIdIndexRoute
   '/@{$workspaceSlug}/$resourceSlug/~/settings': typeof AuthAtChar123workspaceSlugChar125ResourceSlugChar126SettingsRoute
+  '/api/signet/documents/$id/certificate': typeof ApiSignetDocumentsIdCertificateRoute
   '/api/signet/documents/$id/editor': typeof ApiSignetDocumentsIdEditorRoute
   '/api/signet/documents/$id/fields': typeof ApiSignetDocumentsIdFieldsRoute
   '/api/signet/documents/$id/file': typeof ApiSignetDocumentsIdFileRoute
   '/api/signet/documents/$id/remind': typeof ApiSignetDocumentsIdRemindRoute
   '/api/signet/documents/$id/send': typeof ApiSignetDocumentsIdSendRoute
   '/api/signet/documents/$id/signed': typeof ApiSignetDocumentsIdSignedRoute
+  '/api/signet/sign/$token/certificate': typeof ApiSignetSignTokenCertificateRoute
   '/api/signet/sign/$token/download': typeof ApiSignetSignTokenDownloadRoute
 }
 export interface FileRoutesById {
@@ -292,12 +310,14 @@ export interface FileRoutesById {
   '/_auth/@{$workspaceSlug}/$resourceSlug/': typeof AuthAtChar123workspaceSlugChar125ResourceSlugIndexRoute
   '/_auth/documents/$id/': typeof AuthDocumentsIdIndexRoute
   '/_auth/@{$workspaceSlug}/$resourceSlug/~/settings': typeof AuthAtChar123workspaceSlugChar125ResourceSlugChar126SettingsRoute
+  '/api/signet/documents/$id/certificate': typeof ApiSignetDocumentsIdCertificateRoute
   '/api/signet/documents/$id/editor': typeof ApiSignetDocumentsIdEditorRoute
   '/api/signet/documents/$id/fields': typeof ApiSignetDocumentsIdFieldsRoute
   '/api/signet/documents/$id/file': typeof ApiSignetDocumentsIdFileRoute
   '/api/signet/documents/$id/remind': typeof ApiSignetDocumentsIdRemindRoute
   '/api/signet/documents/$id/send': typeof ApiSignetDocumentsIdSendRoute
   '/api/signet/documents/$id/signed': typeof ApiSignetDocumentsIdSignedRoute
+  '/api/signet/sign/$token/certificate': typeof ApiSignetSignTokenCertificateRoute
   '/api/signet/sign/$token/download': typeof ApiSignetSignTokenDownloadRoute
 }
 export interface FileRouteTypes {
@@ -325,12 +345,14 @@ export interface FileRouteTypes {
     | '/@{$workspaceSlug}/$resourceSlug/'
     | '/documents/$id/'
     | '/@{$workspaceSlug}/$resourceSlug/~/settings'
+    | '/api/signet/documents/$id/certificate'
     | '/api/signet/documents/$id/editor'
     | '/api/signet/documents/$id/fields'
     | '/api/signet/documents/$id/file'
     | '/api/signet/documents/$id/remind'
     | '/api/signet/documents/$id/send'
     | '/api/signet/documents/$id/signed'
+    | '/api/signet/sign/$token/certificate'
     | '/api/signet/sign/$token/download'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -354,12 +376,14 @@ export interface FileRouteTypes {
     | '/@{$workspaceSlug}/$resourceSlug'
     | '/documents/$id'
     | '/@{$workspaceSlug}/$resourceSlug/~/settings'
+    | '/api/signet/documents/$id/certificate'
     | '/api/signet/documents/$id/editor'
     | '/api/signet/documents/$id/fields'
     | '/api/signet/documents/$id/file'
     | '/api/signet/documents/$id/remind'
     | '/api/signet/documents/$id/send'
     | '/api/signet/documents/$id/signed'
+    | '/api/signet/sign/$token/certificate'
     | '/api/signet/sign/$token/download'
   id:
     | '__root__'
@@ -386,12 +410,14 @@ export interface FileRouteTypes {
     | '/_auth/@{$workspaceSlug}/$resourceSlug/'
     | '/_auth/documents/$id/'
     | '/_auth/@{$workspaceSlug}/$resourceSlug/~/settings'
+    | '/api/signet/documents/$id/certificate'
     | '/api/signet/documents/$id/editor'
     | '/api/signet/documents/$id/fields'
     | '/api/signet/documents/$id/file'
     | '/api/signet/documents/$id/remind'
     | '/api/signet/documents/$id/send'
     | '/api/signet/documents/$id/signed'
+    | '/api/signet/sign/$token/certificate'
     | '/api/signet/sign/$token/download'
   fileRoutesById: FileRoutesById
 }
@@ -568,6 +594,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiSignetSignTokenDownloadRouteImport
       parentRoute: typeof ApiSignetSignTokenRoute
     }
+    '/api/signet/sign/$token/certificate': {
+      id: '/api/signet/sign/$token/certificate'
+      path: '/certificate'
+      fullPath: '/api/signet/sign/$token/certificate'
+      preLoaderRoute: typeof ApiSignetSignTokenCertificateRouteImport
+      parentRoute: typeof ApiSignetSignTokenRoute
+    }
     '/api/signet/documents/$id/signed': {
       id: '/api/signet/documents/$id/signed'
       path: '/signed'
@@ -608,6 +641,13 @@ declare module '@tanstack/react-router' {
       path: '/editor'
       fullPath: '/api/signet/documents/$id/editor'
       preLoaderRoute: typeof ApiSignetDocumentsIdEditorRouteImport
+      parentRoute: typeof ApiSignetDocumentsIdRoute
+    }
+    '/api/signet/documents/$id/certificate': {
+      id: '/api/signet/documents/$id/certificate'
+      path: '/certificate'
+      fullPath: '/api/signet/documents/$id/certificate'
+      preLoaderRoute: typeof ApiSignetDocumentsIdCertificateRouteImport
       parentRoute: typeof ApiSignetDocumentsIdRoute
     }
     '/_auth/@{$workspaceSlug}/$resourceSlug/~/settings': {
@@ -689,6 +729,7 @@ const AuthRouteChildren: AuthRouteChildren = {
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
 interface ApiSignetDocumentsIdRouteChildren {
+  ApiSignetDocumentsIdCertificateRoute: typeof ApiSignetDocumentsIdCertificateRoute
   ApiSignetDocumentsIdEditorRoute: typeof ApiSignetDocumentsIdEditorRoute
   ApiSignetDocumentsIdFieldsRoute: typeof ApiSignetDocumentsIdFieldsRoute
   ApiSignetDocumentsIdFileRoute: typeof ApiSignetDocumentsIdFileRoute
@@ -698,6 +739,7 @@ interface ApiSignetDocumentsIdRouteChildren {
 }
 
 const ApiSignetDocumentsIdRouteChildren: ApiSignetDocumentsIdRouteChildren = {
+  ApiSignetDocumentsIdCertificateRoute: ApiSignetDocumentsIdCertificateRoute,
   ApiSignetDocumentsIdEditorRoute: ApiSignetDocumentsIdEditorRoute,
   ApiSignetDocumentsIdFieldsRoute: ApiSignetDocumentsIdFieldsRoute,
   ApiSignetDocumentsIdFileRoute: ApiSignetDocumentsIdFileRoute,
@@ -721,10 +763,12 @@ const ApiSignetDocumentsRouteWithChildren =
   ApiSignetDocumentsRoute._addFileChildren(ApiSignetDocumentsRouteChildren)
 
 interface ApiSignetSignTokenRouteChildren {
+  ApiSignetSignTokenCertificateRoute: typeof ApiSignetSignTokenCertificateRoute
   ApiSignetSignTokenDownloadRoute: typeof ApiSignetSignTokenDownloadRoute
 }
 
 const ApiSignetSignTokenRouteChildren: ApiSignetSignTokenRouteChildren = {
+  ApiSignetSignTokenCertificateRoute: ApiSignetSignTokenCertificateRoute,
   ApiSignetSignTokenDownloadRoute: ApiSignetSignTokenDownloadRoute,
 }
 

@@ -3,6 +3,7 @@ import {
   ArrowDown,
   CheckCircle2,
   Download,
+  FileCheck,
   Loader2,
   UploadCloud,
 } from "lucide-react";
@@ -23,6 +24,7 @@ interface FillData {
   documentName: string;
   signerName: string;
   alreadySigned: boolean;
+  documentCompleted: boolean;
   waitingFor: string | null;
   pdfBase64: string;
   fields: Field[];
@@ -71,6 +73,7 @@ const SignerFill = ({ token }: { token: string }) => {
   const [agreed, setAgreed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+  const [completedAll, setCompletedAll] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [highlightId, setHighlightId] = useState<string | null>(null);
 
@@ -311,6 +314,10 @@ const SignerFill = ({ token }: { token: string }) => {
         }),
       });
       if (!res.ok) throw new Error();
+      const body = (await res.json().catch(() => ({}))) as {
+        completed?: boolean;
+      };
+      setCompletedAll(body.completed === true);
       try {
         localStorage.setItem(
           SIG_STORAGE_KEY,
@@ -352,11 +359,20 @@ const SignerFill = ({ token }: { token: string }) => {
         <p className="mt-2 text-muted-foreground text-sm">
           Thank you. This document has your signature.
         </p>
-        <a href={`/api/signet/sign/${token}/download`}>
-          <Button className="mt-6 gap-2">
-            <Download className="size-4" /> Download signed PDF
-          </Button>
-        </a>
+        <div className="mt-6 flex flex-col items-center justify-center gap-2 sm:flex-row">
+          <a href={`/api/signet/sign/${token}/download`}>
+            <Button className="gap-2">
+              <Download className="size-4" /> Download signed PDF
+            </Button>
+          </a>
+          {(completedAll || data.documentCompleted) && (
+            <a href={`/api/signet/sign/${token}/certificate`}>
+              <Button variant="outline" className="gap-2">
+                <FileCheck className="size-4" /> Certificate of completion
+              </Button>
+            </a>
+          )}
+        </div>
       </div>
     );
   }

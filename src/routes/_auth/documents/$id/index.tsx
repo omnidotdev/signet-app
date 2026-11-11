@@ -9,6 +9,7 @@ import {
   Clock,
   Download,
   Eye,
+  FileCheck,
   Pencil,
   ShieldCheck,
 } from "lucide-react";
@@ -153,6 +154,17 @@ function DocumentDetailPage() {
                 {data.hasSignedPdf ? "Download signed PDF" : "Open document"}
               </Button>
             </a>
+            {data.status === "completed" && (
+              <a
+                href={`/api/signet/documents/${data.id}/certificate`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <Button variant="outline" className="gap-2">
+                  <FileCheck className="size-4" /> Certificate
+                </Button>
+              </a>
+            )}
             {data.status === "draft" && (
               <Link to="/documents/$id/edit" params={{ id: data.id }}>
                 <Button variant="outline" className="gap-2">
