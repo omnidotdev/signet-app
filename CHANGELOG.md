@@ -1,5 +1,11 @@
 # @omnidotdev/signet-app
 
+## 0.2.0
+
+### Minor Changes
+
+- [#51](https://github.com/omnidotdev/signet-app/pull/51) [`ea23ae5`](https://github.com/omnidotdev/signet-app/commit/ea23ae55b0b786421a50cc5865f54a5f56dd6e1a) Thanks [@coopbri](https://github.com/coopbri)! - Forward the signer's origin IP and browser user-agent through the sign and sign-as-me proxies so the Signet API can record them in the audit trail, and require electronic-records (ESIGN / UETA) consent on the "sign it myself" quick-sign path with a consent checkbox that gates the action.
+
 ## 0.1.1
 
 ### Patch Changes
