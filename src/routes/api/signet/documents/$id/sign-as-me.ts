@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { signetApiUrl } from "@/lib/signet/config";
+import { forwardedClientHeaders } from "@/lib/signet/forwardedClientHeaders";
 import { ownerHeaders } from "@/lib/signet/ownerHeaders";
 
 /**
@@ -22,6 +23,7 @@ export const Route = createFileRoute("/api/signet/documents/$id/sign-as-me")({
           headers: {
             "content-type": request.headers.get("content-type") ?? "",
             ...(await ownerHeaders(request.headers)),
+            ...forwardedClientHeaders(request.headers),
           },
           // @ts-expect-error -- duplex is required to stream a request body
           duplex: "half",

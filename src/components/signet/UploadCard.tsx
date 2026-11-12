@@ -43,6 +43,7 @@ const UploadCard = ({ onSent }: Props) => {
   const [docName, setDocName] = useState("");
   const [mode, setMode] = useState<Mode>("send");
   const [selfName, setSelfName] = useState("");
+  const [selfConsent, setSelfConsent] = useState(false);
   const [signers, setSigners] = useState<SignerInput[]>([emptySigner()]);
   const [sequential, setSequential] = useState(false);
   const [requireCode, setRequireCode] = useState(false);
@@ -112,6 +113,8 @@ const UploadCard = ({ onSent }: Props) => {
       const fd = new FormData();
       fd.set("file", file);
       fd.set("name", docName || selfName || "Signer");
+      // ESIGN / UETA: the API refuses to stamp without affirmed consent
+      fd.set("consent", "true");
       const res = await fetch("/api/signet/sign", { method: "POST", body: fd });
       if (!res.ok) throw new Error();
       const blob = await res.blob();
@@ -355,6 +358,16 @@ const UploadCard = ({ onSent }: Props) => {
                 onChange={(e) => setSelfName(e.target.value)}
                 placeholder="Your name"
               />
+              <label className="mt-3 flex items-start gap-2 text-muted-foreground text-sm">
+                <input
+                  type="checkbox"
+                  className="mt-0.5"
+                  checked={selfConsent}
+                  onChange={(e) => setSelfConsent(e.target.checked)}
+                />
+                I agree to sign this document electronically and that my
+                electronic signature is legally binding (ESIGN / UETA).
+              </label>
             </Field>
           )}
 
@@ -366,7 +379,9 @@ const UploadCard = ({ onSent }: Props) => {
               disabled={
                 busy ||
                 savingDraft ||
-                (mode === "send" ? namedSigners.length === 0 : !selfName.trim())
+                (mode === "send"
+                  ? namedSigners.length === 0
+                  : !selfName.trim() || !selfConsent)
               }
               onClick={mode === "send" ? () => submit(false) : signMyself}
             >
