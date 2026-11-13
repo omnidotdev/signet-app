@@ -1,5 +1,26 @@
 # @omnidotdev/signet-app
 
+## 0.5.0
+
+### Minor Changes
+
+- [#65](https://github.com/omnidotdev/signet-app/pull/65) [`bccf96a`](https://github.com/omnidotdev/signet-app/commit/bccf96a4b58c4b53fec86645133426bdb6a8024c) Thanks [@coopbri](https://github.com/coopbri)! - Add an API keys section to the Profile page for sending documents from your own
+  systems. Create a named key (its secret is shown once, with a copy button), see
+  when each key was created and last used, and revoke a key behind a confirmation.
+
+- [#62](https://github.com/omnidotdev/signet-app/pull/62) [`5f2122a`](https://github.com/omnidotdev/signet-app/commit/5f2122ac105760194dbbf4b2f7bd7c13cbb6dfd8) Thanks [@coopbri](https://github.com/coopbri)! - Let signers pick a handwriting style when they type their signature: classic,
+  flowing, bold script, or handwritten. Each option previews the signer's own name,
+  the document's signature and initials fields preview in the chosen style, and the
+  choice is remembered with the saved signature. The faces are self-hosted, so no
+  third-party font requests are made.
+
+- [#64](https://github.com/omnidotdev/signet-app/pull/64) [`da3f343`](https://github.com/omnidotdev/signet-app/commit/da3f34378c4dad8f19236a08a02bf96a0e6ba227) Thanks [@coopbri](https://github.com/coopbri)! - Multi-signer templates and bulk send. Starting from a template now asks for a
+  signer for each of its roles ("Signer 1", "Signer 2", ...), so every field lands
+  with the right person; additional signers can still be added. A new Bulk send
+  action sends a template to many recipients from a pasted or uploaded CSV (a name
+  and email per signer role on each line), previewing how many documents will go
+  out and flagging problem lines before anything is sent.
+
 ## 0.4.0
 
 ### Minor Changes
