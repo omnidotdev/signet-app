@@ -1,5 +1,32 @@
 # @omnidotdev/signet-app
 
+## 0.4.0
+
+### Minor Changes
+
+- [#60](https://github.com/omnidotdev/signet-app/pull/60) [`79e41fb`](https://github.com/omnidotdev/signet-app/commit/79e41fb0e4ec9cd93679d437a5b3054d3637c76a) Thanks [@coopbri](https://github.com/coopbri)! - Accept Word document (.docx) uploads in the upload card, alongside PDF and images,
+  through the file picker and drag-and-drop. The server converts the document to PDF
+  before signing.
+
+- [#59](https://github.com/omnidotdev/signet-app/pull/59) [`fa561fb`](https://github.com/omnidotdev/signet-app/commit/fa561fb4d05d5706a0e18a456de8a894ce04764f) Thanks [@coopbri](https://github.com/coopbri)! - Let senders upload an image (PNG or JPEG), not only a PDF. The upload card accepts
+  images in the file picker and by drag-and-drop, validates the choice, and the
+  server places the image onto a PDF page before signing. An unsupported file gets a
+  clear, actionable message.
+
+- [#58](https://github.com/omnidotdev/signet-app/pull/58) [`e6583ac`](https://github.com/omnidotdev/signet-app/commit/e6583ace15dffe3d60b74c762a244200caae6d01) Thanks [@coopbri](https://github.com/coopbri)! - Let senders style the fields they place in the editor. A date field gains a date
+  format (ISO, US, EU, or a long "Month D, YYYY" style), and any field gains an ink
+  color for its mark. The signing page previews both the chosen date format and the
+  color, so what the signer sees matches the signed document.
+
+### Patch Changes
+
+- [#56](https://github.com/omnidotdev/signet-app/pull/56) [`286551b`](https://github.com/omnidotdev/signet-app/commit/286551b6d36dea36d3ae423f2f00b67dd98df49e) Thanks [@coopbri](https://github.com/coopbri)! - Keep the signing guide reachable after the signer first sees their signature.
+  The floating "go to your signature" prompt previously retired for good the
+  moment the signature scrolled into view, so scrolling back up left nothing to
+  lead the signer down to where they sign. The guide is now persistent and driven
+  purely by whether its target is on screen: it hides while the next field or the
+  signature is in view and reappears whenever the signer scrolls away from it.
+
 ## 0.3.0
 
 ### Minor Changes
