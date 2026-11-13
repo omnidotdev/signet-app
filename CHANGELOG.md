@@ -1,5 +1,25 @@
 # @omnidotdev/signet-app
 
+## 0.6.0
+
+### Minor Changes
+
+- [#70](https://github.com/omnidotdev/signet-app/pull/70) [`6ca0e02`](https://github.com/omnidotdev/signet-app/commit/6ca0e0256abd0765ab037b41c8570e10d288f564) Thanks [@coopbri](https://github.com/coopbri)! - Upload a new version of a document. From a sent, completed, declined, or voided
+  document, "Upload new version" takes a new file and opens the next version as a
+  draft with the same signers and fields, ready to review and send. Replacing a
+  document still out for signature asks for confirmation first, since it voids the
+  current request; a completed document is kept as the record of what was signed.
+  The document page shows the version number and links to the previous and latest
+  versions.
+
+### Patch Changes
+
+- [#67](https://github.com/omnidotdev/signet-app/pull/67) [`d77dad8`](https://github.com/omnidotdev/signet-app/commit/d77dad87a4dd48aee05cfa9a74ae3ed889d72910) Thanks [@coopbri](https://github.com/coopbri)! - Show typed signatures at the size the signed document will use. The signature
+  style picker now previews each handwriting face at a matched visual size (the
+  flowing style no longer looks tiny), and the signature and initials fields on the
+  document size their text to the field the same way the signed PDF does, instead
+  of inheriting the page font size and getting clipped.
+
 ## 0.5.0
 
 ### Minor Changes
