@@ -31,9 +31,18 @@ const emptySigner = (): SignerInput => ({
 });
 
 /** Formats a sender can upload: a PDF is signed as-is, an image is placed on a page */
-const ACCEPTED_UPLOAD_TYPES = ["application/pdf", "image/png", "image/jpeg"];
-const ACCEPTED_UPLOAD_EXT = /\.(pdf|png|jpe?g)$/i;
-const ACCEPTED_UPLOAD_ATTR = "application/pdf,image/png,image/jpeg";
+const DOCX_MIME =
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+const ACCEPTED_UPLOAD_TYPES = [
+  "application/pdf",
+  "image/png",
+  "image/jpeg",
+  DOCX_MIME,
+];
+const ACCEPTED_UPLOAD_EXT = /\.(pdf|png|jpe?g|docx)$/i;
+const ACCEPTED_UPLOAD_ATTR = `application/pdf,image/png,image/jpeg,${DOCX_MIME},.docx`;
+/** Shown when a chosen or uploaded file is not a format we can turn into a PDF */
+const UNSUPPORTED_UPLOAD_MSG = "Upload a PDF, image, or Word document (.docx).";
 
 /**
  * Upload a PDF and either sign it yourself (download) or send it to one or more
@@ -68,7 +77,7 @@ const UploadCard = ({ onSent }: Props) => {
       ACCEPTED_UPLOAD_TYPES.includes(f.type) ||
       ACCEPTED_UPLOAD_EXT.test(f.name);
     if (!ok) {
-      setError("Upload a PDF, PNG, or JPEG.");
+      setError(UNSUPPORTED_UPLOAD_MSG);
       return;
     }
     setFile(f);
@@ -149,7 +158,7 @@ const UploadCard = ({ onSent }: Props) => {
     } catch (e) {
       setError(
         e instanceof Error && e.message === "unsupported"
-          ? "That file type isn't supported. Upload a PDF, PNG, or JPEG."
+          ? `That file type isn't supported. ${UNSUPPORTED_UPLOAD_MSG}`
           : "Could not sign the document. Please try again.",
       );
     } finally {
@@ -193,7 +202,7 @@ const UploadCard = ({ onSent }: Props) => {
     } catch (e) {
       setError(
         e instanceof Error && e.message === "unsupported"
-          ? "That file type isn't supported. Upload a PDF, PNG, or JPEG."
+          ? `That file type isn't supported. ${UNSUPPORTED_UPLOAD_MSG}`
           : draft
             ? "Could not save the draft. Please try again."
             : "Could not send the document. Please try again.",
@@ -232,7 +241,7 @@ const UploadCard = ({ onSent }: Props) => {
         ) : (
           <>
             <span className="font-medium text-sm">
-              Drop a PDF or image here, or click to choose
+              Drop a PDF, image, or Word doc here, or click to choose
             </span>
             <span className="text-muted-foreground text-xs">
               Your document is signed securely and never used to train AI.
