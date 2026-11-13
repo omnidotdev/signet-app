@@ -9,8 +9,10 @@ import { mswServer } from "./setup/mswServer";
  * Sets up happy-dom for DOM testing and starts MSW server for API mocking.
  */
 
-// Register happy-dom globals for React Testing Library
-GlobalRegistrator.register();
+// Register happy-dom globals for React Testing Library. Give the document a
+// real origin so components that fetch same-origin paths (`/api/...`) resolve
+// them in every test file, not only after another file happened to set one
+GlobalRegistrator.register({ url: "http://localhost:3000" });
 
 // Start MSW server for API mocking
 mswServer.listen({ onUnhandledRequest: "warn" });
