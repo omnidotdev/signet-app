@@ -67,23 +67,26 @@ describe("guideTargetField", () => {
 
   test("points at the first field that still needs input", () => {
     const incomplete = (f: { id: string }) => f.id === "txt";
-    expect(guideTargetField([sig, txt], incomplete, false)).toBe(txt);
+    expect(guideTargetField([sig, txt], incomplete)).toBe(txt);
   });
 
   test("falls back to the signature when nothing is outstanding (the pre-filled-name case)", () => {
     // a pre-filled signature makes every field "complete", so without the
     // fallback the guide would vanish and never prompt a scroll to the signature
     const nothingIncomplete = () => false;
-    expect(guideTargetField([sig, txt], nothingIncomplete, false)).toBe(sig);
+    expect(guideTargetField([sig, txt], nothingIncomplete)).toBe(sig);
   });
 
-  test("retires once the signer has reached the signature", () => {
+  test("keeps pointing at the signature so the guide returns if the signer scrolls away", () => {
+    // the target is persistent: visibility is decided by whether it is on
+    // screen, not latched off once seen, so scrolling away from the signature
+    // brings the guide back to lead the signer down to it again
     const nothingIncomplete = () => false;
-    expect(guideTargetField([sig, txt], nothingIncomplete, true)).toBeNull();
+    expect(guideTargetField([sig, txt], nothingIncomplete)).toBe(sig);
   });
 
   test("returns null when there is no signature to review", () => {
     const nothingIncomplete = () => false;
-    expect(guideTargetField([txt], nothingIncomplete, false)).toBeNull();
+    expect(guideTargetField([txt], nothingIncomplete)).toBeNull();
   });
 });

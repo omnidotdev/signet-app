@@ -25,7 +25,6 @@ import {
 import {
   guideTargetField,
   isFieldIncomplete,
-  isSignatureField,
   isTourField,
 } from "@/lib/signet/fieldCompletion";
 
@@ -460,14 +459,13 @@ const SignerFill = ({
   // counts as "complete" from the first paint and `nextField` is null; the
   // guide would then vanish before the signer has even seen where their
   // signature lands, which on a multi-page document means no prompt to scroll
-  // down to it at all. guideTargetField falls back to the signature to review
-  const [reachedSignature, setReachedSignature] = useState(false);
+  // down to it at all. guideTargetField falls back to the signature to review.
+  // The target is persistent: the guide's visibility is driven purely by whether
+  // this target is on screen (below), so scrolling away from the signature
+  // brings the guide back to lead the signer down to it again
   const guideTarget = useMemo(
-    () => guideTargetField(tourFields, isIncomplete, reachedSignature),
-    [tourFields, isIncomplete, reachedSignature],
-  );
-  const guidingToSignature = Boolean(
-    guideTarget && !nextField && isSignatureField(guideTarget),
+    () => guideTargetField(tourFields, isIncomplete),
+    [tourFields, isIncomplete],
   );
 
   // scroll a field to center and nudge the signer into it: a text field takes
@@ -520,9 +518,6 @@ const SignerFill = ({
       const margin = Math.min(140, vh * 0.2);
       const onScreen = rect.top >= margin && rect.bottom <= vh - margin;
       const dir: "up" | "down" = rect.top < margin ? "up" : "down";
-      // once the signer has scrolled their signature into view, the review
-      // prompt has done its job and retires
-      if (onScreen && guidingToSignature) setReachedSignature(true);
       setGuide((g) =>
         g.show === !onScreen && g.dir === dir ? g : { show: !onScreen, dir },
       );
@@ -538,7 +533,7 @@ const SignerFill = ({
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
     };
-  }, [guideTarget, guidingToSignature, pages.length]);
+  }, [guideTarget, pages.length]);
 
   const finish = async () => {
     const name = typedName.trim();
@@ -1023,10 +1018,7 @@ const SignerFill = ({
       {pages.length > 0 && guideTarget && (
         <button
           type="button"
-          onClick={() => {
-            focusField(guideTarget);
-            if (guidingToSignature) setReachedSignature(true);
-          }}
+          onClick={() => focusField(guideTarget)}
           className="fixed bottom-6 left-1/2 z-20 inline-flex -translate-x-1/2 items-center gap-2 rounded-full bg-primary px-5 py-2.5 font-medium text-primary-foreground text-sm shadow-lg transition-colors hover:bg-primary/90"
         >
           {guide.dir === "up" ? (
