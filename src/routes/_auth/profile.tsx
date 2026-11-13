@@ -5,6 +5,7 @@ import {
   ManageSubscription,
   RenewSubscription,
 } from "@/components/profile";
+import ApiKeysSection from "@/components/signet/ApiKeysSection";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { fetchSession } from "@/server/functions/auth";
 import { getSubscription } from "@/server/functions/subscriptions";
@@ -104,6 +105,8 @@ const ProfilePage = () => {
           )}
         </div>
       </div>
+
+      <ApiKeysSection />
     </div>
   );
 };

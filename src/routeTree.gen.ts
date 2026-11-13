@@ -21,6 +21,7 @@ import { Route as AuthDocumentsIndexRouteImport } from './routes/_auth/documents
 import { Route as AuthAtChar123workspaceSlugChar125IndexRouteImport } from './routes/_auth/@{$workspaceSlug}/index'
 import { Route as ApiSignetTemplatesRouteImport } from './routes/api/signet/templates'
 import { Route as ApiSignetSignRouteImport } from './routes/api/signet/sign'
+import { Route as ApiSignetKeysRouteImport } from './routes/api/signet/keys'
 import { Route as ApiSignetDocumentsRouteImport } from './routes/api/signet/documents'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as AuthAtChar123workspaceSlugChar125ResourceSlugRouteImport } from './routes/_auth/@{$workspaceSlug}/$resourceSlug'
@@ -28,6 +29,7 @@ import { Route as AuthDocumentsIdIndexRouteImport } from './routes/_auth/documen
 import { Route as AuthAtChar123workspaceSlugChar125ResourceSlugIndexRouteImport } from './routes/_auth/@{$workspaceSlug}/$resourceSlug/index'
 import { Route as ApiSignetSignTokenRouteImport } from './routes/api/signet/sign/$token'
 import { Route as ApiSignetMeSignatureRouteImport } from './routes/api/signet/me/signature'
+import { Route as ApiSignetKeysIdRouteImport } from './routes/api/signet/keys/$id'
 import { Route as ApiSignetDraftsFromTemplateRouteImport } from './routes/api/signet/drafts/from-template'
 import { Route as ApiSignetDocumentsIdRouteImport } from './routes/api/signet/documents/$id'
 import { Route as AuthDocumentsIdSignRouteImport } from './routes/_auth/documents/$id/sign'
@@ -116,6 +118,11 @@ const ApiSignetSignRoute = ApiSignetSignRouteImport.update({
   path: '/api/signet/sign',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiSignetKeysRoute = ApiSignetKeysRouteImport.update({
+  id: '/api/signet/keys',
+  path: '/api/signet/keys',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiSignetDocumentsRoute = ApiSignetDocumentsRouteImport.update({
   id: '/api/signet/documents',
   path: '/api/signet/documents',
@@ -152,6 +159,11 @@ const ApiSignetMeSignatureRoute = ApiSignetMeSignatureRouteImport.update({
   id: '/api/signet/me/signature',
   path: '/api/signet/me/signature',
   getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSignetKeysIdRoute = ApiSignetKeysIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApiSignetKeysRoute,
 } as any)
 const ApiSignetDraftsFromTemplateRoute =
   ApiSignetDraftsFromTemplateRouteImport.update({
@@ -319,6 +331,7 @@ export interface FileRoutesByFullPath {
   '/@{$workspaceSlug}/$resourceSlug': typeof AuthAtChar123workspaceSlugChar125ResourceSlugRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/signet/documents': typeof ApiSignetDocumentsRouteWithChildren
+  '/api/signet/keys': typeof ApiSignetKeysRouteWithChildren
   '/api/signet/sign': typeof ApiSignetSignRouteWithChildren
   '/api/signet/templates': typeof ApiSignetTemplatesRouteWithChildren
   '/@{$workspaceSlug}/': typeof AuthAtChar123workspaceSlugChar125IndexRoute
@@ -331,6 +344,7 @@ export interface FileRoutesByFullPath {
   '/documents/$id/sign': typeof AuthDocumentsIdSignRoute
   '/api/signet/documents/$id': typeof ApiSignetDocumentsIdRouteWithChildren
   '/api/signet/drafts/from-template': typeof ApiSignetDraftsFromTemplateRoute
+  '/api/signet/keys/$id': typeof ApiSignetKeysIdRoute
   '/api/signet/me/signature': typeof ApiSignetMeSignatureRoute
   '/api/signet/sign/$token': typeof ApiSignetSignTokenRouteWithChildren
   '/@{$workspaceSlug}/$resourceSlug/': typeof AuthAtChar123workspaceSlugChar125ResourceSlugIndexRoute
@@ -363,6 +377,7 @@ export interface FileRoutesByTo {
   '/sign/$token': typeof SignTokenRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/signet/documents': typeof ApiSignetDocumentsRouteWithChildren
+  '/api/signet/keys': typeof ApiSignetKeysRouteWithChildren
   '/api/signet/sign': typeof ApiSignetSignRouteWithChildren
   '/api/signet/templates': typeof ApiSignetTemplatesRouteWithChildren
   '/@{$workspaceSlug}': typeof AuthAtChar123workspaceSlugChar125IndexRoute
@@ -375,6 +390,7 @@ export interface FileRoutesByTo {
   '/documents/$id/sign': typeof AuthDocumentsIdSignRoute
   '/api/signet/documents/$id': typeof ApiSignetDocumentsIdRouteWithChildren
   '/api/signet/drafts/from-template': typeof ApiSignetDraftsFromTemplateRoute
+  '/api/signet/keys/$id': typeof ApiSignetKeysIdRoute
   '/api/signet/me/signature': typeof ApiSignetMeSignatureRoute
   '/api/signet/sign/$token': typeof ApiSignetSignTokenRouteWithChildren
   '/@{$workspaceSlug}/$resourceSlug': typeof AuthAtChar123workspaceSlugChar125ResourceSlugIndexRoute
@@ -411,6 +427,7 @@ export interface FileRoutesById {
   '/_auth/@{$workspaceSlug}/$resourceSlug': typeof AuthAtChar123workspaceSlugChar125ResourceSlugRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/signet/documents': typeof ApiSignetDocumentsRouteWithChildren
+  '/api/signet/keys': typeof ApiSignetKeysRouteWithChildren
   '/api/signet/sign': typeof ApiSignetSignRouteWithChildren
   '/api/signet/templates': typeof ApiSignetTemplatesRouteWithChildren
   '/_auth/@{$workspaceSlug}/': typeof AuthAtChar123workspaceSlugChar125IndexRoute
@@ -423,6 +440,7 @@ export interface FileRoutesById {
   '/_auth/documents/$id/sign': typeof AuthDocumentsIdSignRoute
   '/api/signet/documents/$id': typeof ApiSignetDocumentsIdRouteWithChildren
   '/api/signet/drafts/from-template': typeof ApiSignetDraftsFromTemplateRoute
+  '/api/signet/keys/$id': typeof ApiSignetKeysIdRoute
   '/api/signet/me/signature': typeof ApiSignetMeSignatureRoute
   '/api/signet/sign/$token': typeof ApiSignetSignTokenRouteWithChildren
   '/_auth/@{$workspaceSlug}/$resourceSlug/': typeof AuthAtChar123workspaceSlugChar125ResourceSlugIndexRoute
@@ -459,6 +477,7 @@ export interface FileRouteTypes {
     | '/@{$workspaceSlug}/$resourceSlug'
     | '/api/auth/$'
     | '/api/signet/documents'
+    | '/api/signet/keys'
     | '/api/signet/sign'
     | '/api/signet/templates'
     | '/@{$workspaceSlug}/'
@@ -471,6 +490,7 @@ export interface FileRouteTypes {
     | '/documents/$id/sign'
     | '/api/signet/documents/$id'
     | '/api/signet/drafts/from-template'
+    | '/api/signet/keys/$id'
     | '/api/signet/me/signature'
     | '/api/signet/sign/$token'
     | '/@{$workspaceSlug}/$resourceSlug/'
@@ -503,6 +523,7 @@ export interface FileRouteTypes {
     | '/sign/$token'
     | '/api/auth/$'
     | '/api/signet/documents'
+    | '/api/signet/keys'
     | '/api/signet/sign'
     | '/api/signet/templates'
     | '/@{$workspaceSlug}'
@@ -515,6 +536,7 @@ export interface FileRouteTypes {
     | '/documents/$id/sign'
     | '/api/signet/documents/$id'
     | '/api/signet/drafts/from-template'
+    | '/api/signet/keys/$id'
     | '/api/signet/me/signature'
     | '/api/signet/sign/$token'
     | '/@{$workspaceSlug}/$resourceSlug'
@@ -550,6 +572,7 @@ export interface FileRouteTypes {
     | '/_auth/@{$workspaceSlug}/$resourceSlug'
     | '/api/auth/$'
     | '/api/signet/documents'
+    | '/api/signet/keys'
     | '/api/signet/sign'
     | '/api/signet/templates'
     | '/_auth/@{$workspaceSlug}/'
@@ -562,6 +585,7 @@ export interface FileRouteTypes {
     | '/_auth/documents/$id/sign'
     | '/api/signet/documents/$id'
     | '/api/signet/drafts/from-template'
+    | '/api/signet/keys/$id'
     | '/api/signet/me/signature'
     | '/api/signet/sign/$token'
     | '/_auth/@{$workspaceSlug}/$resourceSlug/'
@@ -594,6 +618,7 @@ export interface RootRouteChildren {
   SignTokenRoute: typeof SignTokenRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiSignetDocumentsRoute: typeof ApiSignetDocumentsRouteWithChildren
+  ApiSignetKeysRoute: typeof ApiSignetKeysRouteWithChildren
   ApiSignetSignRoute: typeof ApiSignetSignRouteWithChildren
   ApiSignetTemplatesRoute: typeof ApiSignetTemplatesRouteWithChildren
   ApiSignetDraftsFromTemplateRoute: typeof ApiSignetDraftsFromTemplateRoute
@@ -686,6 +711,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiSignetSignRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/signet/keys': {
+      id: '/api/signet/keys'
+      path: '/api/signet/keys'
+      fullPath: '/api/signet/keys'
+      preLoaderRoute: typeof ApiSignetKeysRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/signet/documents': {
       id: '/api/signet/documents'
       path: '/api/signet/documents'
@@ -734,6 +766,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/signet/me/signature'
       preLoaderRoute: typeof ApiSignetMeSignatureRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/api/signet/keys/$id': {
+      id: '/api/signet/keys/$id'
+      path: '/$id'
+      fullPath: '/api/signet/keys/$id'
+      preLoaderRoute: typeof ApiSignetKeysIdRouteImport
+      parentRoute: typeof ApiSignetKeysRoute
     }
     '/api/signet/drafts/from-template': {
       id: '/api/signet/drafts/from-template'
@@ -1062,6 +1101,18 @@ const ApiSignetDocumentsRouteChildren: ApiSignetDocumentsRouteChildren = {
 const ApiSignetDocumentsRouteWithChildren =
   ApiSignetDocumentsRoute._addFileChildren(ApiSignetDocumentsRouteChildren)
 
+interface ApiSignetKeysRouteChildren {
+  ApiSignetKeysIdRoute: typeof ApiSignetKeysIdRoute
+}
+
+const ApiSignetKeysRouteChildren: ApiSignetKeysRouteChildren = {
+  ApiSignetKeysIdRoute: ApiSignetKeysIdRoute,
+}
+
+const ApiSignetKeysRouteWithChildren = ApiSignetKeysRoute._addFileChildren(
+  ApiSignetKeysRouteChildren,
+)
+
 interface ApiSignetSignTokenRouteChildren {
   ApiSignetSignTokenCertificateRoute: typeof ApiSignetSignTokenCertificateRoute
   ApiSignetSignTokenDeclineRoute: typeof ApiSignetSignTokenDeclineRoute
@@ -1111,6 +1162,7 @@ const rootRouteChildren: RootRouteChildren = {
   SignTokenRoute: SignTokenRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiSignetDocumentsRoute: ApiSignetDocumentsRouteWithChildren,
+  ApiSignetKeysRoute: ApiSignetKeysRouteWithChildren,
   ApiSignetSignRoute: ApiSignetSignRouteWithChildren,
   ApiSignetTemplatesRoute: ApiSignetTemplatesRouteWithChildren,
   ApiSignetDraftsFromTemplateRoute: ApiSignetDraftsFromTemplateRoute,
