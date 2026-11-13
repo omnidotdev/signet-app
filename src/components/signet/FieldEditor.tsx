@@ -25,6 +25,10 @@ import {
   DialogRoot,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { DATE_FORMAT_OPTIONS } from "@/lib/signet/dateFormat";
+
+/** The default stamped ink (the signing blue), shown when a field has no color */
+const DEFAULT_FIELD_INK = "#1c2e73";
 
 type FieldType =
   | "signature"
@@ -51,6 +55,10 @@ interface EditorField {
   required?: boolean;
   /** links mutually-exclusive radio buttons into one group */
   groupId?: string | null;
+  /** date style for a date field: iso | us | eu | long */
+  dateFormat?: string | null;
+  /** ink for this field's stamped mark, as #rrggbb; null uses the default */
+  color?: string | null;
 }
 interface EditorSigner {
   id: string;
@@ -422,6 +430,18 @@ const FieldEditor = ({ token }: { token: string }) => {
     setFields((prev) =>
       prev.map((f) => (f.key === selected ? { ...f, groupId } : f)),
     );
+  const setSelectedDateFormat = (dateFormat: string) =>
+    setFields((prev) =>
+      prev.map((f) =>
+        f.key === selected
+          ? { ...f, dateFormat: dateFormat === "iso" ? null : dateFormat }
+          : f,
+      ),
+    );
+  const setSelectedColor = (color: string | null) =>
+    setFields((prev) =>
+      prev.map((f) => (f.key === selected ? { ...f, color } : f)),
+    );
   const assignSelected = (signerId: string) => {
     if (selected)
       setFields((prev) =>
@@ -565,6 +585,43 @@ const FieldEditor = ({ token }: { token: string }) => {
                 />
               </label>
             </>
+          )}
+          {selectedField?.type === "date" && (
+            <label className="flex items-center gap-2 text-sm">
+              <span className="text-muted-foreground">Date format</span>
+              <select
+                className="input h-9 py-1"
+                value={selectedField.dateFormat ?? "iso"}
+                onChange={(e) => setSelectedDateFormat(e.target.value)}
+              >
+                {DATE_FORMAT_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          {selectedField && (
+            <label className="flex items-center gap-2 text-sm">
+              <span className="text-muted-foreground">Color</span>
+              <input
+                type="color"
+                aria-label="Field color"
+                className="h-9 w-9 cursor-pointer rounded border border-border bg-transparent p-0.5"
+                value={selectedField.color ?? DEFAULT_FIELD_INK}
+                onChange={(e) => setSelectedColor(e.target.value)}
+              />
+              {selectedField.color && (
+                <button
+                  type="button"
+                  className="text-muted-foreground text-xs underline"
+                  onClick={() => setSelectedColor(null)}
+                >
+                  Reset
+                </button>
+              )}
+            </label>
           )}
           {selectedField && selectedField.type !== "date" && (
             <label className="flex items-center gap-2 text-sm">
