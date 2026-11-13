@@ -1,5 +1,24 @@
 # @omnidotdev/signet-app
 
+## 0.3.0
+
+### Minor Changes
+
+- [#53](https://github.com/omnidotdev/signet-app/pull/53) [`b356b5c`](https://github.com/omnidotdev/signet-app/commit/b356b5c6e29fedcf05bf3ee645306b4ff8496e02) Thanks [@coopbri](https://github.com/coopbri)! - Add signer identity verification by emailed one-time code. Senders can require
+  it from the send surface (every signer then needs an email), and a signer is
+  shown a verification screen that emails them a code to enter before the
+  document opens. The code screen works in the native signer flow and, server
+  rendered, without client JavaScript.
+
+### Patch Changes
+
+- [#55](https://github.com/omnidotdev/signet-app/pull/55) [`9e94c3a`](https://github.com/omnidotdev/signet-app/commit/9e94c3a7c19cbca09993010f738aecd5099c39ef) Thanks [@coopbri](https://github.com/coopbri)! - Fix the signing guide not appearing when a signer's signature is pre-filled
+  from their name. Because the pre-filled name counted as an adopted signature,
+  every signature field was treated as already complete, so the floating "go to
+  your signature" prompt never showed and there was nothing to lead the signer
+  down to where they sign. The guide now falls back to the signature for review
+  until the signer has reached it.
+
 ## 0.2.0
 
 ### Minor Changes
