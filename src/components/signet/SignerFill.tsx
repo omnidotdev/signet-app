@@ -22,6 +22,7 @@ import {
   DialogRoot,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { formatDate } from "@/lib/signet/dateFormat";
 import {
   guideTargetField,
   isFieldIncomplete,
@@ -41,6 +42,10 @@ interface Field {
   options?: string[] | null;
   required?: boolean;
   groupId?: string | null;
+  /** date style for a date field: iso | us | eu | long */
+  dateFormat?: string | null;
+  /** ink for this field's mark, as #rrggbb; null uses the default */
+  color?: string | null;
   page: number;
   x: number;
   y: number;
@@ -1200,8 +1205,9 @@ const FieldOverlay = ({
       <div style={style} className={`overflow-hidden rounded border ${ring}`}>
         <input
           data-fid={field.id}
-          value={textValue || today}
+          value={textValue || formatDate(today, field.dateFormat)}
           onChange={(e) => onText(e.target.value)}
+          style={field.color ? { color: field.color } : undefined}
           className="size-full border-0 bg-transparent px-1 text-center font-semibold text-slate-800 italic"
         />
       </div>
@@ -1216,6 +1222,7 @@ const FieldOverlay = ({
           value={textValue}
           onChange={(e) => onText(e.target.value)}
           placeholder="Text"
+          style={field.color ? { color: field.color } : undefined}
           className="size-full border-0 bg-transparent px-1 text-slate-800"
         />
       </div>
