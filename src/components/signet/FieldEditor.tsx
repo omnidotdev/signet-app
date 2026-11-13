@@ -26,9 +26,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { DATE_FORMAT_OPTIONS } from "@/lib/signet/dateFormat";
+import { DEFAULT_INK } from "@/lib/signet/ink";
 
 /** The default stamped ink (the signing blue), shown when a field has no color */
-const DEFAULT_FIELD_INK = "#1c2e73";
 
 type FieldType =
   | "signature"
@@ -609,7 +609,7 @@ const FieldEditor = ({ token }: { token: string }) => {
                 type="color"
                 aria-label="Field color"
                 className="h-9 w-9 cursor-pointer rounded border border-border bg-transparent p-0.5"
-                value={selectedField.color ?? DEFAULT_FIELD_INK}
+                value={selectedField.color ?? DEFAULT_INK}
                 onChange={(e) => setSelectedColor(e.target.value)}
               />
               {selectedField.color && (

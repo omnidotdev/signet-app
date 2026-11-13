@@ -31,10 +31,12 @@ import {
 } from "@/components/ui/dialog";
 import { formatDate } from "@/lib/signet/dateFormat";
 import {
+  guidePlacement,
   guideTargetField,
   isFieldIncomplete,
   isTourField,
 } from "@/lib/signet/fieldCompletion";
+import { DEFAULT_INK } from "@/lib/signet/ink";
 import {
   SIGNATURE_FONT_OPTIONS,
   markFontSizeCqh,
@@ -179,6 +181,7 @@ const SignerFill = ({
   const uploadRef = useRef<HTMLInputElement>(null);
   const padRef = useRef<HTMLCanvasElement>(null);
   const adoptRef = useRef<HTMLDivElement>(null);
+  const toolbarRef = useRef<HTMLDivElement>(null);
   const drawingRef = useRef(false);
   const lastRef = useRef<[number, number]>([0, 0]);
 
@@ -417,7 +420,7 @@ const SignerFill = ({
     if (!ctx) return;
     ctx.lineWidth = 2.5;
     ctx.lineCap = "round";
-    ctx.strokeStyle = "#1c2e73";
+    ctx.strokeStyle = DEFAULT_INK;
     drawingRef.current = true;
     lastRef.current = padPoint(e) as [number, number];
     padRef.current?.setPointerCapture(e.pointerId);
@@ -452,6 +455,7 @@ const SignerFill = ({
   const sigCount =
     data?.fields.filter((f) => f.type === "signature" || f.type === "initials")
       .length ?? 0;
+  const hasDates = data?.fields.some((f) => f.type === "date") ?? false;
   const today = new Date().toISOString().slice(0, 10);
 
   const focusAdopt = useCallback(() => {
@@ -544,14 +548,15 @@ const SignerFill = ({
         setGuide((g) => (g.show ? { show: false, dir: g.dir } : g));
         return;
       }
-      const rect = el.getBoundingClientRect();
       const vh = window.innerHeight || document.documentElement.clientHeight;
-      const margin = Math.min(140, vh * 0.2);
-      const onScreen = rect.top >= margin && rect.bottom <= vh - margin;
-      const dir: "up" | "down" = rect.top < margin ? "up" : "down";
-      setGuide((g) =>
-        g.show === !onScreen && g.dir === dir ? g : { show: !onScreen, dir },
-      );
+      // the sticky header and toolbar cover the top; the guide's own strip
+      // covers the bottom
+      const toolbar = toolbarRef.current?.getBoundingClientRect().bottom ?? 0;
+      const next = guidePlacement(el.getBoundingClientRect(), {
+        top: Math.max(toolbar, 0),
+        bottom: vh - 80,
+      });
+      setGuide((g) => (g.show === next.show && g.dir === next.dir ? g : next));
     };
     const onScroll = () => {
       if (!raf) raf = requestAnimationFrame(measure);
@@ -968,10 +973,13 @@ const SignerFill = ({
       </div>
 
       {/* Toolbar */}
-      <div className="sticky top-16 z-10 mt-6 flex flex-col gap-2 border-border border-b bg-background/90 py-3 backdrop-blur sm:flex-row sm:items-center sm:gap-3">
+      <div
+        ref={toolbarRef}
+        className="sticky top-16 z-10 mt-6 flex flex-col gap-2 border-border border-b bg-background/90 py-3 backdrop-blur sm:flex-row sm:items-center sm:gap-3"
+      >
         <span className="text-muted-foreground text-sm sm:flex-1">
           {sigCount
-            ? `Sign in ${sigCount} place${sigCount === 1 ? "" : "s"}; dates fill in automatically.`
+            ? `Sign in ${sigCount} place${sigCount === 1 ? "" : "s"}${hasDates ? "; dates fill in automatically" : ""}.`
             : "Click Finish to apply your signature."}
         </span>
         <Button
@@ -1086,10 +1094,9 @@ const SignerFill = ({
         )}
       </div>
 
-      {/* Floating guide to the next field: shown whenever a required field is
-          still unfilled, so it is always discoverable, and the arrow points
-          toward the field (up/down) */}
-      {pages.length > 0 && guideTarget && (
+      {/* Floating guide to the next field (or back to the signature): shown
+          only while that field is off screen, pointing up or down toward it */}
+      {pages.length > 0 && guideTarget && guide.show && (
         <button
           type="button"
           onClick={() => focusField(guideTarget)}
@@ -1176,7 +1183,7 @@ const FieldOverlay = ({
   signatureFont: SignatureFont;
   image: string | null;
   highlight: boolean;
-  /** this signer's color, used to tint their fields (Adobe-Sign style) */
+  /** this signer's color, used to tint their fields */
   color: string;
   textValue: string;
   onText: (v: string) => void;
@@ -1191,7 +1198,7 @@ const FieldOverlay = ({
     width: pct(field.width, pageWidthPt),
     height: pct(field.height, pageHeightPt),
   };
-  const tint = `${color}1a`; // ~10% alpha
+  const tint = `${color}26`; // ~15% alpha
   const style: React.CSSProperties = {
     ...base,
     borderColor: color,
@@ -1213,7 +1220,7 @@ const FieldOverlay = ({
           borderColor: color,
           background: checked ? `${color}33` : tint,
         }}
-        className={`flex items-center justify-center rounded border ${ring}`}
+        className={`flex items-center justify-center rounded border-2 ${ring}`}
       >
         {checked && (
           <Check className="size-[80%]" style={{ color }} strokeWidth={3} />
@@ -1224,7 +1231,7 @@ const FieldOverlay = ({
 
   if (field.type === "dropdown") {
     return (
-      <div style={style} className={`overflow-hidden rounded border ${ring}`}>
+      <div style={style} className={`overflow-hidden rounded border-2 ${ring}`}>
         <select
           data-fid={field.id}
           value={textValue}
@@ -1274,12 +1281,12 @@ const FieldOverlay = ({
 
   if (field.type === "date") {
     return (
-      <div style={style} className={`overflow-hidden rounded border ${ring}`}>
+      <div style={style} className={`overflow-hidden rounded border-2 ${ring}`}>
         <input
           data-fid={field.id}
           value={textValue || formatDate(today, field.dateFormat)}
           onChange={(e) => onText(e.target.value)}
-          style={field.color ? { color: field.color } : undefined}
+          style={{ color: field.color || DEFAULT_INK }}
           className="size-full border-0 bg-transparent px-1 text-center font-semibold text-slate-800 italic"
         />
       </div>
@@ -1288,13 +1295,13 @@ const FieldOverlay = ({
 
   if (field.type === "text") {
     return (
-      <div style={style} className={`overflow-hidden rounded border ${ring}`}>
+      <div style={style} className={`overflow-hidden rounded border-2 ${ring}`}>
         <input
           data-fid={field.id}
           value={textValue}
           onChange={(e) => onText(e.target.value)}
           placeholder="Text"
-          style={field.color ? { color: field.color } : undefined}
+          style={{ color: field.color || DEFAULT_INK }}
           className="size-full border-0 bg-transparent px-1 text-slate-800"
         />
       </div>
@@ -1315,10 +1322,11 @@ const FieldOverlay = ({
         // the mark inside sizes itself in container query units of this box
         containerType: "size",
         borderColor: color,
-        background: filled ? "transparent" : tint,
+        // stays tinted once filled so the signer can always see where they sign
+        background: filled ? tint : `${color}40`,
       }}
       data-fid={field.id}
-      className={`flex cursor-pointer items-center justify-center overflow-hidden rounded border ${ring}`}
+      className={`flex cursor-pointer items-center justify-center overflow-hidden rounded border-2 ${ring}`}
     >
       {image ? (
         <img src={image} alt="signature" className="max-h-full max-w-full" />
@@ -1327,6 +1335,7 @@ const FieldOverlay = ({
           text={mark}
           font={signatureFont}
           fieldHeightPt={field.height}
+          ink={field.color}
         />
       ) : (
         <span
@@ -1350,10 +1359,13 @@ const SignatureMark = ({
   text,
   font,
   fieldHeightPt,
+  ink,
 }: {
   text: string;
   font: SignatureFont;
   fieldHeightPt: number;
+  /** the sender's chosen ink, as on the signed PDF; default ink when unset */
+  ink?: string | null;
 }) => {
   const ref = useRef<HTMLSpanElement>(null);
   const [fit, setFit] = useState(1);
@@ -1384,6 +1396,7 @@ const SignatureMark = ({
       style={{
         ...face,
         fontSize: `${markFontSizeCqh(fieldHeightPt, font)}cqh`,
+        color: ink || DEFAULT_INK,
         transform: fit < 1 ? `scale(${fit})` : undefined,
       }}
     >
