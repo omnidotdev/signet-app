@@ -49,6 +49,8 @@ import { Route as ApiSignetDocumentsIdFieldsRouteImport } from './routes/api/sig
 import { Route as ApiSignetDocumentsIdEditorRouteImport } from './routes/api/signet/documents/$id/editor'
 import { Route as ApiSignetDocumentsIdCertificateRouteImport } from './routes/api/signet/documents/$id/certificate'
 import { Route as AuthAtChar123workspaceSlugChar125ResourceSlugChar126SettingsRouteImport } from './routes/_auth/@{$workspaceSlug}/$resourceSlug/~/settings'
+import { Route as ApiSignetSignTokenOtpVerifyRouteImport } from './routes/api/signet/sign/$token/otp/verify'
+import { Route as ApiSignetSignTokenOtpRequestRouteImport } from './routes/api/signet/sign/$token/otp/request'
 import { Route as ApiSignetDocumentsIdSignersSignerIdRouteImport } from './routes/api/signet/documents/$id/signers/$signerId'
 import { Route as ApiSignetDocumentsIdSignAsMeDeclineRouteImport } from './routes/api/signet/documents/$id/sign-as-me/decline'
 
@@ -275,6 +277,18 @@ const AuthAtChar123workspaceSlugChar125ResourceSlugChar126SettingsRoute =
       getParentRoute: () => AuthAtChar123workspaceSlugChar125ResourceSlugRoute,
     } as any,
   )
+const ApiSignetSignTokenOtpVerifyRoute =
+  ApiSignetSignTokenOtpVerifyRouteImport.update({
+    id: '/otp/verify',
+    path: '/otp/verify',
+    getParentRoute: () => ApiSignetSignTokenRoute,
+  } as any)
+const ApiSignetSignTokenOtpRequestRoute =
+  ApiSignetSignTokenOtpRequestRouteImport.update({
+    id: '/otp/request',
+    path: '/otp/request',
+    getParentRoute: () => ApiSignetSignTokenRoute,
+  } as any)
 const ApiSignetDocumentsIdSignersSignerIdRoute =
   ApiSignetDocumentsIdSignersSignerIdRouteImport.update({
     id: '/$signerId',
@@ -330,6 +344,8 @@ export interface FileRoutesByFullPath {
   '/api/signet/sign/$token/download': typeof ApiSignetSignTokenDownloadRoute
   '/api/signet/documents/$id/sign-as-me/decline': typeof ApiSignetDocumentsIdSignAsMeDeclineRoute
   '/api/signet/documents/$id/signers/$signerId': typeof ApiSignetDocumentsIdSignersSignerIdRoute
+  '/api/signet/sign/$token/otp/request': typeof ApiSignetSignTokenOtpRequestRoute
+  '/api/signet/sign/$token/otp/verify': typeof ApiSignetSignTokenOtpVerifyRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -371,6 +387,8 @@ export interface FileRoutesByTo {
   '/api/signet/sign/$token/download': typeof ApiSignetSignTokenDownloadRoute
   '/api/signet/documents/$id/sign-as-me/decline': typeof ApiSignetDocumentsIdSignAsMeDeclineRoute
   '/api/signet/documents/$id/signers/$signerId': typeof ApiSignetDocumentsIdSignersSignerIdRoute
+  '/api/signet/sign/$token/otp/request': typeof ApiSignetSignTokenOtpRequestRoute
+  '/api/signet/sign/$token/otp/verify': typeof ApiSignetSignTokenOtpVerifyRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -416,6 +434,8 @@ export interface FileRoutesById {
   '/api/signet/sign/$token/download': typeof ApiSignetSignTokenDownloadRoute
   '/api/signet/documents/$id/sign-as-me/decline': typeof ApiSignetDocumentsIdSignAsMeDeclineRoute
   '/api/signet/documents/$id/signers/$signerId': typeof ApiSignetDocumentsIdSignersSignerIdRoute
+  '/api/signet/sign/$token/otp/request': typeof ApiSignetSignTokenOtpRequestRoute
+  '/api/signet/sign/$token/otp/verify': typeof ApiSignetSignTokenOtpVerifyRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -461,6 +481,8 @@ export interface FileRouteTypes {
     | '/api/signet/sign/$token/download'
     | '/api/signet/documents/$id/sign-as-me/decline'
     | '/api/signet/documents/$id/signers/$signerId'
+    | '/api/signet/sign/$token/otp/request'
+    | '/api/signet/sign/$token/otp/verify'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -502,6 +524,8 @@ export interface FileRouteTypes {
     | '/api/signet/sign/$token/download'
     | '/api/signet/documents/$id/sign-as-me/decline'
     | '/api/signet/documents/$id/signers/$signerId'
+    | '/api/signet/sign/$token/otp/request'
+    | '/api/signet/sign/$token/otp/verify'
   id:
     | '__root__'
     | '/'
@@ -546,6 +570,8 @@ export interface FileRouteTypes {
     | '/api/signet/sign/$token/download'
     | '/api/signet/documents/$id/sign-as-me/decline'
     | '/api/signet/documents/$id/signers/$signerId'
+    | '/api/signet/sign/$token/otp/request'
+    | '/api/signet/sign/$token/otp/verify'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -843,6 +869,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthAtChar123workspaceSlugChar125ResourceSlugChar126SettingsRouteImport
       parentRoute: typeof AuthAtChar123workspaceSlugChar125ResourceSlugRoute
     }
+    '/api/signet/sign/$token/otp/verify': {
+      id: '/api/signet/sign/$token/otp/verify'
+      path: '/otp/verify'
+      fullPath: '/api/signet/sign/$token/otp/verify'
+      preLoaderRoute: typeof ApiSignetSignTokenOtpVerifyRouteImport
+      parentRoute: typeof ApiSignetSignTokenRoute
+    }
+    '/api/signet/sign/$token/otp/request': {
+      id: '/api/signet/sign/$token/otp/request'
+      path: '/otp/request'
+      fullPath: '/api/signet/sign/$token/otp/request'
+      preLoaderRoute: typeof ApiSignetSignTokenOtpRequestRouteImport
+      parentRoute: typeof ApiSignetSignTokenRoute
+    }
     '/api/signet/documents/$id/signers/$signerId': {
       id: '/api/signet/documents/$id/signers/$signerId'
       path: '/$signerId'
@@ -1006,12 +1046,16 @@ interface ApiSignetSignTokenRouteChildren {
   ApiSignetSignTokenCertificateRoute: typeof ApiSignetSignTokenCertificateRoute
   ApiSignetSignTokenDeclineRoute: typeof ApiSignetSignTokenDeclineRoute
   ApiSignetSignTokenDownloadRoute: typeof ApiSignetSignTokenDownloadRoute
+  ApiSignetSignTokenOtpRequestRoute: typeof ApiSignetSignTokenOtpRequestRoute
+  ApiSignetSignTokenOtpVerifyRoute: typeof ApiSignetSignTokenOtpVerifyRoute
 }
 
 const ApiSignetSignTokenRouteChildren: ApiSignetSignTokenRouteChildren = {
   ApiSignetSignTokenCertificateRoute: ApiSignetSignTokenCertificateRoute,
   ApiSignetSignTokenDeclineRoute: ApiSignetSignTokenDeclineRoute,
   ApiSignetSignTokenDownloadRoute: ApiSignetSignTokenDownloadRoute,
+  ApiSignetSignTokenOtpRequestRoute: ApiSignetSignTokenOtpRequestRoute,
+  ApiSignetSignTokenOtpVerifyRoute: ApiSignetSignTokenOtpVerifyRoute,
 }
 
 const ApiSignetSignTokenRouteWithChildren =

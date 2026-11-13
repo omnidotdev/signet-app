@@ -47,6 +47,7 @@ const UploadCard = ({ onSent }: Props) => {
   const [signers, setSigners] = useState<SignerInput[]>([emptySigner()]);
   const [sequential, setSequential] = useState(false);
   const [requireCode, setRequireCode] = useState(false);
+  const [requireVerification, setRequireVerification] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [busy, setBusy] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
@@ -69,6 +70,7 @@ const UploadCard = ({ onSent }: Props) => {
     setSigners([emptySigner()]);
     setSequential(false);
     setRequireCode(false);
+    setRequireVerification(false);
     setResult(null);
     setError(null);
   };
@@ -82,6 +84,11 @@ const UploadCard = ({ onSent }: Props) => {
     setSigners((prev) => prev.filter((_, idx) => idx !== i));
 
   const namedSigners = signers.filter((s) => s.name.trim());
+
+  // email identity verification needs every signer to have an address to
+  // receive their one-time code, so block the send until each has one
+  const verificationNeedsEmail =
+    requireVerification && namedSigners.some((s) => !s.email.trim());
 
   // whether the signed-in user is already in the signer list
   const meAdded = Boolean(
@@ -132,7 +139,7 @@ const UploadCard = ({ onSent }: Props) => {
   };
 
   const submit = async (draft: boolean) => {
-    if (!file || namedSigners.length === 0) return;
+    if (!file || namedSigners.length === 0 || verificationNeedsEmail) return;
     draft ? setSavingDraft(true) : setBusy(true);
     setError(null);
     try {
@@ -154,6 +161,7 @@ const UploadCard = ({ onSent }: Props) => {
       );
       if (sequential && namedSigners.length > 1)
         fd.set("signingMode", "sequential");
+      if (requireVerification) fd.set("verificationLevel", "email_otp");
       if (draft) fd.set("draft", "true");
       const res = await fetch("/api/signet/documents", {
         method: "POST",
@@ -348,6 +356,19 @@ const UploadCard = ({ onSent }: Props) => {
                   />
                   Require an access code
                 </label>
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={requireVerification}
+                    onChange={(e) => setRequireVerification(e.target.checked)}
+                  />
+                  Verify each signer by email (one-time code)
+                </label>
+                {verificationNeedsEmail && (
+                  <p className="text-destructive text-xs">
+                    Email verification needs an email address for every signer.
+                  </p>
+                )}
               </div>
             </div>
           ) : (
@@ -380,7 +401,7 @@ const UploadCard = ({ onSent }: Props) => {
                 busy ||
                 savingDraft ||
                 (mode === "send"
-                  ? namedSigners.length === 0
+                  ? namedSigners.length === 0 || verificationNeedsEmail
                   : !selfName.trim() || !selfConsent)
               }
               onClick={mode === "send" ? () => submit(false) : signMyself}
