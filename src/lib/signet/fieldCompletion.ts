@@ -60,3 +60,19 @@ export const guideTargetField = <T extends FillableField>(
   if (next) return next;
   return tourFields.find(isSignatureField) ?? null;
 };
+
+/**
+ * Whether the floating guide should show, and which way it points, given where
+ * the target field sits in the viewport. The guide is a "scroll to" prompt, so
+ * it hides while the target is in view (the field itself is the cue then) and
+ * comes back, pointing up or down, once the signer scrolls it away. `top`
+ * excludes the sticky header and toolbar, `bottom` the guide's own strip, so a
+ * field hidden behind either still counts as off screen.
+ */
+export const guidePlacement = (
+  rect: { top: number; bottom: number },
+  viewport: { top: number; bottom: number },
+): { show: boolean; dir: "up" | "down" } => {
+  const inView = rect.top >= viewport.top && rect.bottom <= viewport.bottom;
+  return { show: !inView, dir: rect.bottom <= viewport.top ? "up" : "down" };
+};

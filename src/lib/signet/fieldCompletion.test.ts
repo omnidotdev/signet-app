@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import {
+  guidePlacement,
   guideTargetField,
   isFieldIncomplete,
   isTourField,
@@ -88,5 +89,40 @@ describe("guideTargetField", () => {
   test("returns null when there is no signature to review", () => {
     const nothingIncomplete = () => false;
     expect(guideTargetField([txt], nothingIncomplete)).toBeNull();
+  });
+});
+
+describe("guidePlacement", () => {
+  const viewport = { top: 130, bottom: 820 };
+
+  test("hides while the target field is in view", () => {
+    expect(guidePlacement({ top: 480, bottom: 495 }, viewport).show).toBe(
+      false,
+    );
+  });
+
+  test("points down to a field below the fold", () => {
+    expect(guidePlacement({ top: 1400, bottom: 1415 }, viewport)).toEqual({
+      show: true,
+      dir: "down",
+    });
+  });
+
+  test("points up to a field scrolled past", () => {
+    expect(guidePlacement({ top: -300, bottom: -285 }, viewport)).toEqual({
+      show: true,
+      dir: "up",
+    });
+  });
+
+  test("a field under the sticky toolbar or behind the guide counts as off screen", () => {
+    expect(guidePlacement({ top: 100, bottom: 115 }, viewport)).toEqual({
+      show: true,
+      dir: "up",
+    });
+    expect(guidePlacement({ top: 810, bottom: 825 }, viewport)).toEqual({
+      show: true,
+      dir: "down",
+    });
   });
 });
