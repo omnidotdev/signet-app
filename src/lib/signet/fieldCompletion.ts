@@ -36,3 +36,26 @@ export const isFieldIncomplete = (
  */
 export const isTourField = (field: FillableField): boolean =>
   field.required !== false && field.type !== "date";
+
+/** Whether a field is where the signer actually signs */
+export const isSignatureField = (field: Pick<FillableField, "type">): boolean =>
+  field.type === "signature" || field.type === "initials";
+
+/**
+ * Where the floating signing guide should point. It leads to the next field
+ * still needing input; once nothing is outstanding it leads to the signature so
+ * the signer scrolls to review it, until they have reached it. A signature is
+ * pre-filled from the signer's name, so without this fallback the guide would
+ * retire on the first paint and never prompt the signer to scroll down to where
+ * they sign. Returns null when there is nothing to point at.
+ */
+export const guideTargetField = <T extends FillableField>(
+  tourFields: T[],
+  isIncomplete: (field: T) => boolean,
+  reachedSignature: boolean,
+): T | null => {
+  const next = tourFields.find(isIncomplete);
+  if (next) return next;
+  if (reachedSignature) return null;
+  return tourFields.find(isSignatureField) ?? null;
+};

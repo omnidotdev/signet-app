@@ -1,6 +1,10 @@
 import { describe, expect, test } from "bun:test";
 
-import { isFieldIncomplete, isTourField } from "./fieldCompletion";
+import {
+  guideTargetField,
+  isFieldIncomplete,
+  isTourField,
+} from "./fieldCompletion";
 
 const ctx = (
   over: Partial<{ textValue: string; hasSignature: boolean }> = {},
@@ -54,5 +58,32 @@ describe("isTourField", () => {
       false,
     );
     expect(isTourField({ id: "4", type: "date", required: true })).toBe(false);
+  });
+});
+
+describe("guideTargetField", () => {
+  const sig = { id: "sig", type: "signature" };
+  const txt = { id: "txt", type: "text" };
+
+  test("points at the first field that still needs input", () => {
+    const incomplete = (f: { id: string }) => f.id === "txt";
+    expect(guideTargetField([sig, txt], incomplete, false)).toBe(txt);
+  });
+
+  test("falls back to the signature when nothing is outstanding (the pre-filled-name case)", () => {
+    // a pre-filled signature makes every field "complete", so without the
+    // fallback the guide would vanish and never prompt a scroll to the signature
+    const nothingIncomplete = () => false;
+    expect(guideTargetField([sig, txt], nothingIncomplete, false)).toBe(sig);
+  });
+
+  test("retires once the signer has reached the signature", () => {
+    const nothingIncomplete = () => false;
+    expect(guideTargetField([sig, txt], nothingIncomplete, true)).toBeNull();
+  });
+
+  test("returns null when there is no signature to review", () => {
+    const nothingIncomplete = () => false;
+    expect(guideTargetField([txt], nothingIncomplete, false)).toBeNull();
   });
 });
