@@ -41,8 +41,6 @@ const knipConfig: KnipConfig = {
     "src/lib/validation/**",
   ],
   ignoreDependencies: [
-    "@changesets/changelog-github",
-    "@changesets/cli",
     "dotenv",
     "@faker-js/faker",
     "@happy-dom/global-registrator",
