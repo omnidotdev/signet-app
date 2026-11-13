@@ -13,7 +13,14 @@ import {
   XCircle,
 } from "lucide-react";
 import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import {
   DialogBackdrop,
@@ -30,6 +37,7 @@ import {
 } from "@/lib/signet/fieldCompletion";
 import {
   SIGNATURE_FONT_OPTIONS,
+  markFontSizeCqh,
   signatureFontStyle,
   toSignatureFont,
 } from "@/lib/signet/signatureFonts";
@@ -1304,6 +1312,8 @@ const FieldOverlay = ({
       onClick={onAdoptClick}
       style={{
         ...base,
+        // the mark inside sizes itself in container query units of this box
+        containerType: "size",
         borderColor: color,
         background: filled ? "transparent" : tint,
       }}
@@ -1313,12 +1323,11 @@ const FieldOverlay = ({
       {image ? (
         <img src={image} alt="signature" className="max-h-full max-w-full" />
       ) : name ? (
-        <span
-          className="whitespace-nowrap font-semibold text-slate-800"
-          style={signatureFontStyle(signatureFont)}
-        >
-          {mark}
-        </span>
+        <SignatureMark
+          text={mark}
+          font={signatureFont}
+          fieldHeightPt={field.height}
+        />
       ) : (
         <span
           className="font-semibold text-xs uppercase tracking-wide"
@@ -1328,6 +1337,58 @@ const FieldOverlay = ({
         </span>
       )}
     </button>
+  );
+};
+
+/**
+ * A typed signature or initials drawn inside its field box the way the signed
+ * PDF will show it: sized to the box height (container query units, so it
+ * tracks the page as it scales) with the style's optical factor, then shrunk to
+ * fit the box width when the name is too long, like the stamp's width fit
+ */
+const SignatureMark = ({
+  text,
+  font,
+  fieldHeightPt,
+}: {
+  text: string;
+  font: SignatureFont;
+  fieldHeightPt: number;
+}) => {
+  const ref = useRef<HTMLSpanElement>(null);
+  const [fit, setFit] = useState(1);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    const box = el?.parentElement;
+    if (!el || !box) return;
+    const measure = () => {
+      const natural = el.scrollWidth;
+      const room = box.clientWidth;
+      setFit(natural > room && natural > 0 ? room / natural : 1);
+    };
+    measure();
+    // re-measure when the box resizes (the page scales) or the mark does (new
+    // text or face); the scale transform does not change layout size, so this
+    // cannot feed back into itself
+    const observer = new ResizeObserver(measure);
+    observer.observe(box);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const { fontSize: _previewSize, ...face } = signatureFontStyle(font);
+  return (
+    <span
+      ref={ref}
+      className="whitespace-nowrap font-semibold text-slate-800 leading-none"
+      style={{
+        ...face,
+        fontSize: `${markFontSizeCqh(fieldHeightPt, font)}cqh`,
+        transform: fit < 1 ? `scale(${fit})` : undefined,
+      }}
+    >
+      {text}
+    </span>
   );
 };
 

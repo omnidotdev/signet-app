@@ -23,6 +23,21 @@ export const SIGNATURE_FONT_OPTIONS: {
   { id: "homemade", label: "Handwritten" },
 ];
 
+/**
+ * Size multiplier that makes each face's lowercase as tall as the classic
+ * signature's (the classic x-height divided by the face's own x-height). These
+ * match the factors the API derives from the same font files when it stamps the
+ * PDF, so the preview and the signed document agree
+ */
+export const OPTICAL_SCALE: Record<
+  Exclude<SignatureFont, "classic">,
+  number
+> = {
+  sacramento: 1.708,
+  dafoe: 1.671,
+  homemade: 0.893,
+};
+
 const FAMILIES: Record<Exclude<SignatureFont, "classic">, string> = {
   sacramento: '"Signet Sacramento", cursive',
   dafoe: '"Signet Mr Dafoe", cursive',
@@ -44,4 +59,24 @@ export const toSignatureFont = (value: unknown): SignatureFont =>
 export const signatureFontStyle = (font: SignatureFont): CSSProperties =>
   font === "classic"
     ? { fontStyle: "italic" }
-    : { fontFamily: FAMILIES[font], fontStyle: "normal", fontWeight: 400 };
+    : {
+        fontFamily: FAMILIES[font],
+        fontStyle: "normal",
+        fontWeight: 400,
+        fontSize: `${OPTICAL_SCALE[font]}em`,
+      };
+
+/** The optical size multiplier for a style (1 for the classic face) */
+export const opticalScale = (font: SignatureFont): number =>
+  font === "classic" ? 1 : OPTICAL_SCALE[font];
+
+/**
+ * Font size for a typed mark inside a field box, as a share of the box height
+ * (CSS `cqh`), matching how the API stamps it: the classic face at the field
+ * height capped at 14pt, a handwriting face scaled by its optical factor
+ */
+export const markFontSizeCqh = (
+  fieldHeightPt: number,
+  font: SignatureFont,
+): number =>
+  (Math.min(fieldHeightPt, 14) / fieldHeightPt) * 100 * opticalScale(font);
