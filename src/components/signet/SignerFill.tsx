@@ -8,6 +8,7 @@ import {
   FileCheck,
   Loader2,
   Lock,
+  ShieldCheck,
   UploadCloud,
   XCircle,
 } from "lucide-react";
@@ -83,6 +84,20 @@ const initialsOf = (name: string) =>
  * fields in place, and sign. Date fields fill automatically. Runs entirely on
  * the client (pdf.js touches the DOM), hosted on the app origin.
  */
+/** A signer-facing message for a failed one-time-code check */
+const otpMessage = (error?: string): string => {
+  switch (error) {
+    case "expired":
+      return "That code has expired. Resend to get a new one.";
+    case "too_many_attempts":
+      return "Too many attempts. Resend to get a new code.";
+    case "no_code":
+      return "Resend a code to continue.";
+    default:
+      return "That code is not right. Check it and try again.";
+  }
+};
+
 const SignerFill = ({
   token,
   basePath,
@@ -108,11 +123,15 @@ const SignerFill = ({
   const base = basePath ?? `/api/signet/sign/${token}`;
   const [data, setData] = useState<FillData | null>(null);
   const [state, setState] = useState<
-    "loading" | "error" | "notfound" | "locked" | "ready"
+    "loading" | "error" | "notfound" | "locked" | "verify" | "ready"
   >("loading");
   const [accessCode, setAccessCode] = useState("");
   const [codeError, setCodeError] = useState(false);
   const [unlocking, setUnlocking] = useState(false);
+  const [otpEmail, setOtpEmail] = useState<string | null>(null);
+  const [otpCode, setOtpCode] = useState("");
+  const [otpError, setOtpError] = useState<string | null>(null);
+  const [otpBusy, setOtpBusy] = useState(false);
   const [pages, setPages] = useState<RenderedPage[]>([]);
   const [mode, setMode] = useState<"type" | "draw" | "upload">("type");
   const [typedName, setTypedName] = useState("");
@@ -152,6 +171,19 @@ const SignerFill = ({
           setState("locked");
           return;
         }
+        // identity verification required: show the one-time-code screen
+        if (res.status === 403) {
+          const body = (await res.json().catch(() => ({}))) as {
+            verify?: boolean;
+            email?: string | null;
+          };
+          if (body.verify) {
+            setOtpEmail(body.email ?? null);
+            setState("verify");
+            return;
+          }
+          throw new Error();
+        }
         if (!res.ok) throw new Error();
         const body = (await res.json()) as FillData;
         setData(body);
@@ -175,6 +207,46 @@ const SignerFill = ({
     setCodeError(false);
     await load(accessCode.trim());
     setUnlocking(false);
+  };
+
+  // Submit the emailed one-time code; on success, reload into the fill page
+  const submitOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!otpCode.trim() || otpBusy) return;
+    setOtpBusy(true);
+    setOtpError(null);
+    try {
+      const res = await fetch(`${base}/otp/verify`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ code: otpCode.trim() }),
+      });
+      if (res.ok) {
+        setOtpCode("");
+        setState("loading");
+        await load();
+        return;
+      }
+      const body = (await res.json().catch(() => ({}))) as { error?: string };
+      setOtpError(otpMessage(body.error));
+    } catch {
+      setOtpError("Something went wrong. Please try again.");
+    } finally {
+      setOtpBusy(false);
+    }
+  };
+
+  const resendOtp = async () => {
+    if (otpBusy) return;
+    setOtpBusy(true);
+    setOtpError(null);
+    try {
+      await fetch(`${base}/otp/request`, { method: "POST" });
+    } catch {
+      // best effort; the signer can try again
+    } finally {
+      setOtpBusy(false);
+    }
   };
 
   // On touch devices drawing a signature is natural, so lead with Draw; on a
@@ -605,6 +677,52 @@ const SignerFill = ({
             {unlocking ? "Checking..." : "Open document"}
           </Button>
         </form>
+      </div>
+    );
+  }
+  if (state === "verify") {
+    return (
+      <div className="mx-auto w-full max-w-sm px-5 py-20 text-center">
+        <ShieldCheck className="mx-auto size-8 text-muted-foreground" />
+        <h1 className="mt-4 font-semibold text-xl tracking-tight">
+          Verify it is you
+        </h1>
+        <p className="mt-2 text-muted-foreground text-sm">
+          {otpEmail
+            ? `We emailed a code to ${otpEmail}. Enter it to open the document.`
+            : "We emailed you a code. Enter it to open the document."}
+        </p>
+        <form onSubmit={submitOtp} className="mt-6">
+          <input
+            className="input text-center text-lg tracking-[0.3em]"
+            value={otpCode}
+            onChange={(e) => setOtpCode(e.target.value)}
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            placeholder="123456"
+            maxLength={6}
+            // biome-ignore lint/a11y/noAutofocus: a single-purpose verify screen
+            autoFocus
+          />
+          {otpError && (
+            <p className="mt-2 text-destructive text-sm">{otpError}</p>
+          )}
+          <Button
+            type="submit"
+            className="mt-4 w-full"
+            disabled={otpBusy || !otpCode.trim()}
+          >
+            {otpBusy ? "Checking..." : "Verify and continue"}
+          </Button>
+        </form>
+        <button
+          type="button"
+          onClick={resendOtp}
+          disabled={otpBusy}
+          className="mt-4 text-muted-foreground text-sm underline underline-offset-2 hover:text-foreground disabled:opacity-60"
+        >
+          Resend code
+        </button>
       </div>
     );
   }
