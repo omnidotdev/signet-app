@@ -28,6 +28,13 @@ import {
   isFieldIncomplete,
   isTourField,
 } from "@/lib/signet/fieldCompletion";
+import {
+  SIGNATURE_FONT_OPTIONS,
+  signatureFontStyle,
+  toSignatureFont,
+} from "@/lib/signet/signatureFonts";
+
+import type { SignatureFont } from "@/lib/signet/signatureFonts";
 
 interface Field {
   id: string;
@@ -144,6 +151,9 @@ const SignerFill = ({
   const [pages, setPages] = useState<RenderedPage[]>([]);
   const [mode, setMode] = useState<"type" | "draw" | "upload">("type");
   const [typedName, setTypedName] = useState("");
+  // handwriting style of a typed signature, previewed here and embedded into
+  // the signed PDF by the API
+  const [signatureFont, setSignatureFont] = useState<SignatureFont>("classic");
   const [drawnImage, setDrawnImage] = useState<string | null>(null);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [textValues, setTextValues] = useState<Record<string, string>>({});
@@ -281,8 +291,10 @@ const SignerFill = ({
       name?: string | null;
       image?: string | null;
       kind?: string;
+      font?: string | null;
     }) => {
       if (saved.name) setTypedName(saved.name);
+      setSignatureFont(toSignatureFont(saved.font));
       if (saved.image) {
         if (saved.kind === "upload") {
           setUploadedImage(saved.image);
@@ -304,11 +316,17 @@ const SignerFill = ({
               typedName?: string | null;
               image?: string | null;
               mode?: string;
+              font?: string | null;
             } | null;
           };
           const sig = body.signature;
           if (!sig || cancelled) return;
-          applySaved({ name: sig.typedName, image: sig.image, kind: sig.mode });
+          applySaved({
+            name: sig.typedName,
+            image: sig.image,
+            kind: sig.mode,
+            font: sig.font,
+          });
         } catch {
           // no saved signature, fine
         }
@@ -567,6 +585,7 @@ const SignerFill = ({
         body: JSON.stringify({
           signature: name,
           signatureImage: activeImage ? activeImage.split(",")[1] : null,
+          signatureFont: mode === "type" ? signatureFont : null,
           textValues,
           consent: true,
           accessCode: accessCode.trim() || undefined,
@@ -596,6 +615,7 @@ const SignerFill = ({
             typedName: mode === "type" ? name : null,
             image: activeImage ?? null,
             mode,
+            font: mode === "type" ? signatureFont : null,
           }),
         }).catch(() => {
           // saving the signature is best-effort
@@ -604,7 +624,12 @@ const SignerFill = ({
         try {
           localStorage.setItem(
             SIG_STORAGE_KEY,
-            JSON.stringify({ name, image: activeImage ?? null, kind: mode }),
+            JSON.stringify({
+              name,
+              image: activeImage ?? null,
+              kind: mode,
+              font: mode === "type" ? signatureFont : null,
+            }),
           );
         } catch {
           // storing the adopted signature is best-effort
@@ -831,12 +856,45 @@ const SignerFill = ({
         </div>
 
         {mode === "type" && (
-          <input
-            className="input mt-3"
-            value={typedName}
-            onChange={(e) => setTypedName(e.target.value)}
-            placeholder="Your full name"
-          />
+          <>
+            <input
+              className="input mt-3"
+              value={typedName}
+              onChange={(e) => setTypedName(e.target.value)}
+              placeholder="Your full name"
+            />
+            <fieldset className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <legend className="sr-only">Signature style</legend>
+              {SIGNATURE_FONT_OPTIONS.map((o) => (
+                <label
+                  key={o.id}
+                  className={`flex h-16 cursor-pointer flex-col items-center justify-center gap-0.5 overflow-hidden rounded-lg border px-2 transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary ${
+                    signatureFont === o.id
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:border-primary/60"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="signature-font"
+                    value={o.id}
+                    checked={signatureFont === o.id}
+                    onChange={() => setSignatureFont(o.id)}
+                    className="sr-only"
+                  />
+                  <span
+                    className="max-w-full truncate text-lg text-slate-800"
+                    style={signatureFontStyle(o.id)}
+                  >
+                    {typedName.trim() || "Your name"}
+                  </span>
+                  <span className="text-muted-foreground text-xs">
+                    {o.label}
+                  </span>
+                </label>
+              ))}
+            </fieldset>
+          </>
         )}
         {mode === "draw" && (
           <div className="mt-3">
@@ -985,6 +1043,9 @@ const SignerFill = ({
                       pageHeightPt={pg.heightPt}
                       today={today}
                       typedName={typedName}
+                      signatureFont={
+                        mode === "type" ? signatureFont : "classic"
+                      }
                       image={activeImage}
                       highlight={highlightId === f.id}
                       color={data.signerColor || "#be6221"}
@@ -1090,6 +1151,7 @@ const FieldOverlay = ({
   pageHeightPt,
   today,
   typedName,
+  signatureFont,
   image,
   highlight,
   color,
@@ -1102,6 +1164,8 @@ const FieldOverlay = ({
   pageHeightPt: number;
   today: string;
   typedName: string;
+  /** handwriting style the typed mark previews in */
+  signatureFont: SignatureFont;
   image: string | null;
   highlight: boolean;
   /** this signer's color, used to tint their fields (Adobe-Sign style) */
@@ -1249,7 +1313,10 @@ const FieldOverlay = ({
       {image ? (
         <img src={image} alt="signature" className="max-h-full max-w-full" />
       ) : name ? (
-        <span className="whitespace-nowrap font-semibold text-slate-800 italic">
+        <span
+          className="whitespace-nowrap font-semibold text-slate-800"
+          style={signatureFontStyle(signatureFont)}
+        >
           {mark}
         </span>
       ) : (

@@ -320,3 +320,24 @@
   border-color: var(--color-ring);
   box-shadow: 0 0 0 2px color-mix(in oklab, var(--color-ring) 40%, transparent);
 }
+
+/*
+ * Handwriting faces for typed signatures, self-hosted (no third-party font
+ * requests) and matching the faces the API embeds into the signed PDF. Licenses
+ * ship beside each file in /fonts
+ */
+@font-face {
+  font-family: "Signet Sacramento";
+  src: url("/fonts/Sacramento-Regular.ttf") format("truetype");
+  font-display: swap;
+}
+@font-face {
+  font-family: "Signet Mr Dafoe";
+  src: url("/fonts/MrDafoe-Regular.ttf") format("truetype");
+  font-display: swap;
+}
+@font-face {
+  font-family: "Signet Homemade Apple";
+  src: url("/fonts/HomemadeApple-Regular.ttf") format("truetype");
+  font-display: swap;
+}
