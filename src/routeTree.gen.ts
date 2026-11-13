@@ -35,6 +35,7 @@ import { Route as AuthDocumentsIdEditRouteImport } from './routes/_auth/document
 import { Route as AuthAtChar123workspaceSlugChar125Char126SettingsRouteImport } from './routes/_auth/@{$workspaceSlug}/~/settings'
 import { Route as AuthAtChar123workspaceSlugChar125Char126MembersRouteImport } from './routes/_auth/@{$workspaceSlug}/~/members'
 import { Route as AuthAtChar123workspaceSlugChar125Char126BillingRouteImport } from './routes/_auth/@{$workspaceSlug}/~/billing'
+import { Route as ApiSignetTemplatesIdBulkSendRouteImport } from './routes/api/signet/templates/$id/bulk-send'
 import { Route as ApiSignetSignTokenDownloadRouteImport } from './routes/api/signet/sign/$token/download'
 import { Route as ApiSignetSignTokenDeclineRouteImport } from './routes/api/signet/sign/$token/decline'
 import { Route as ApiSignetSignTokenCertificateRouteImport } from './routes/api/signet/sign/$token/certificate'
@@ -191,6 +192,12 @@ const AuthAtChar123workspaceSlugChar125Char126BillingRoute =
     path: '/~/billing',
     getParentRoute: () => AuthAtChar123workspaceSlugChar125Route,
   } as any)
+const ApiSignetTemplatesIdBulkSendRoute =
+  ApiSignetTemplatesIdBulkSendRouteImport.update({
+    id: '/$id/bulk-send',
+    path: '/$id/bulk-send',
+    getParentRoute: () => ApiSignetTemplatesRoute,
+  } as any)
 const ApiSignetSignTokenDownloadRoute =
   ApiSignetSignTokenDownloadRouteImport.update({
     id: '/download',
@@ -313,7 +320,7 @@ export interface FileRoutesByFullPath {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/signet/documents': typeof ApiSignetDocumentsRouteWithChildren
   '/api/signet/sign': typeof ApiSignetSignRouteWithChildren
-  '/api/signet/templates': typeof ApiSignetTemplatesRoute
+  '/api/signet/templates': typeof ApiSignetTemplatesRouteWithChildren
   '/@{$workspaceSlug}/': typeof AuthAtChar123workspaceSlugChar125IndexRoute
   '/documents/': typeof AuthDocumentsIndexRoute
   '/organizations/': typeof AuthOrganizationsIndexRoute
@@ -342,6 +349,7 @@ export interface FileRoutesByFullPath {
   '/api/signet/sign/$token/certificate': typeof ApiSignetSignTokenCertificateRoute
   '/api/signet/sign/$token/decline': typeof ApiSignetSignTokenDeclineRoute
   '/api/signet/sign/$token/download': typeof ApiSignetSignTokenDownloadRoute
+  '/api/signet/templates/$id/bulk-send': typeof ApiSignetTemplatesIdBulkSendRoute
   '/api/signet/documents/$id/sign-as-me/decline': typeof ApiSignetDocumentsIdSignAsMeDeclineRoute
   '/api/signet/documents/$id/signers/$signerId': typeof ApiSignetDocumentsIdSignersSignerIdRoute
   '/api/signet/sign/$token/otp/request': typeof ApiSignetSignTokenOtpRequestRoute
@@ -356,7 +364,7 @@ export interface FileRoutesByTo {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/signet/documents': typeof ApiSignetDocumentsRouteWithChildren
   '/api/signet/sign': typeof ApiSignetSignRouteWithChildren
-  '/api/signet/templates': typeof ApiSignetTemplatesRoute
+  '/api/signet/templates': typeof ApiSignetTemplatesRouteWithChildren
   '/@{$workspaceSlug}': typeof AuthAtChar123workspaceSlugChar125IndexRoute
   '/documents': typeof AuthDocumentsIndexRoute
   '/organizations': typeof AuthOrganizationsIndexRoute
@@ -385,6 +393,7 @@ export interface FileRoutesByTo {
   '/api/signet/sign/$token/certificate': typeof ApiSignetSignTokenCertificateRoute
   '/api/signet/sign/$token/decline': typeof ApiSignetSignTokenDeclineRoute
   '/api/signet/sign/$token/download': typeof ApiSignetSignTokenDownloadRoute
+  '/api/signet/templates/$id/bulk-send': typeof ApiSignetTemplatesIdBulkSendRoute
   '/api/signet/documents/$id/sign-as-me/decline': typeof ApiSignetDocumentsIdSignAsMeDeclineRoute
   '/api/signet/documents/$id/signers/$signerId': typeof ApiSignetDocumentsIdSignersSignerIdRoute
   '/api/signet/sign/$token/otp/request': typeof ApiSignetSignTokenOtpRequestRoute
@@ -403,7 +412,7 @@ export interface FileRoutesById {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/signet/documents': typeof ApiSignetDocumentsRouteWithChildren
   '/api/signet/sign': typeof ApiSignetSignRouteWithChildren
-  '/api/signet/templates': typeof ApiSignetTemplatesRoute
+  '/api/signet/templates': typeof ApiSignetTemplatesRouteWithChildren
   '/_auth/@{$workspaceSlug}/': typeof AuthAtChar123workspaceSlugChar125IndexRoute
   '/_auth/documents/': typeof AuthDocumentsIndexRoute
   '/_auth/organizations/': typeof AuthOrganizationsIndexRoute
@@ -432,6 +441,7 @@ export interface FileRoutesById {
   '/api/signet/sign/$token/certificate': typeof ApiSignetSignTokenCertificateRoute
   '/api/signet/sign/$token/decline': typeof ApiSignetSignTokenDeclineRoute
   '/api/signet/sign/$token/download': typeof ApiSignetSignTokenDownloadRoute
+  '/api/signet/templates/$id/bulk-send': typeof ApiSignetTemplatesIdBulkSendRoute
   '/api/signet/documents/$id/sign-as-me/decline': typeof ApiSignetDocumentsIdSignAsMeDeclineRoute
   '/api/signet/documents/$id/signers/$signerId': typeof ApiSignetDocumentsIdSignersSignerIdRoute
   '/api/signet/sign/$token/otp/request': typeof ApiSignetSignTokenOtpRequestRoute
@@ -479,6 +489,7 @@ export interface FileRouteTypes {
     | '/api/signet/sign/$token/certificate'
     | '/api/signet/sign/$token/decline'
     | '/api/signet/sign/$token/download'
+    | '/api/signet/templates/$id/bulk-send'
     | '/api/signet/documents/$id/sign-as-me/decline'
     | '/api/signet/documents/$id/signers/$signerId'
     | '/api/signet/sign/$token/otp/request'
@@ -522,6 +533,7 @@ export interface FileRouteTypes {
     | '/api/signet/sign/$token/certificate'
     | '/api/signet/sign/$token/decline'
     | '/api/signet/sign/$token/download'
+    | '/api/signet/templates/$id/bulk-send'
     | '/api/signet/documents/$id/sign-as-me/decline'
     | '/api/signet/documents/$id/signers/$signerId'
     | '/api/signet/sign/$token/otp/request'
@@ -568,6 +580,7 @@ export interface FileRouteTypes {
     | '/api/signet/sign/$token/certificate'
     | '/api/signet/sign/$token/decline'
     | '/api/signet/sign/$token/download'
+    | '/api/signet/templates/$id/bulk-send'
     | '/api/signet/documents/$id/sign-as-me/decline'
     | '/api/signet/documents/$id/signers/$signerId'
     | '/api/signet/sign/$token/otp/request'
@@ -582,7 +595,7 @@ export interface RootRouteChildren {
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiSignetDocumentsRoute: typeof ApiSignetDocumentsRouteWithChildren
   ApiSignetSignRoute: typeof ApiSignetSignRouteWithChildren
-  ApiSignetTemplatesRoute: typeof ApiSignetTemplatesRoute
+  ApiSignetTemplatesRoute: typeof ApiSignetTemplatesRouteWithChildren
   ApiSignetDraftsFromTemplateRoute: typeof ApiSignetDraftsFromTemplateRoute
   ApiSignetMeSignatureRoute: typeof ApiSignetMeSignatureRoute
 }
@@ -770,6 +783,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/@{$workspaceSlug}/~/billing'
       preLoaderRoute: typeof AuthAtChar123workspaceSlugChar125Char126BillingRouteImport
       parentRoute: typeof AuthAtChar123workspaceSlugChar125Route
+    }
+    '/api/signet/templates/$id/bulk-send': {
+      id: '/api/signet/templates/$id/bulk-send'
+      path: '/$id/bulk-send'
+      fullPath: '/api/signet/templates/$id/bulk-send'
+      preLoaderRoute: typeof ApiSignetTemplatesIdBulkSendRouteImport
+      parentRoute: typeof ApiSignetTemplatesRoute
     }
     '/api/signet/sign/$token/download': {
       id: '/api/signet/sign/$token/download'
@@ -1073,6 +1093,17 @@ const ApiSignetSignRouteWithChildren = ApiSignetSignRoute._addFileChildren(
   ApiSignetSignRouteChildren,
 )
 
+interface ApiSignetTemplatesRouteChildren {
+  ApiSignetTemplatesIdBulkSendRoute: typeof ApiSignetTemplatesIdBulkSendRoute
+}
+
+const ApiSignetTemplatesRouteChildren: ApiSignetTemplatesRouteChildren = {
+  ApiSignetTemplatesIdBulkSendRoute: ApiSignetTemplatesIdBulkSendRoute,
+}
+
+const ApiSignetTemplatesRouteWithChildren =
+  ApiSignetTemplatesRoute._addFileChildren(ApiSignetTemplatesRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRouteWithChildren,
@@ -1081,7 +1112,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiSignetDocumentsRoute: ApiSignetDocumentsRouteWithChildren,
   ApiSignetSignRoute: ApiSignetSignRouteWithChildren,
-  ApiSignetTemplatesRoute: ApiSignetTemplatesRoute,
+  ApiSignetTemplatesRoute: ApiSignetTemplatesRouteWithChildren,
   ApiSignetDraftsFromTemplateRoute: ApiSignetDraftsFromTemplateRoute,
   ApiSignetMeSignatureRoute: ApiSignetMeSignatureRoute,
 }
