@@ -30,6 +30,11 @@ const emptySigner = (): SignerInput => ({
   accessCode: "",
 });
 
+/** Formats a sender can upload: a PDF is signed as-is, an image is placed on a page */
+const ACCEPTED_UPLOAD_TYPES = ["application/pdf", "image/png", "image/jpeg"];
+const ACCEPTED_UPLOAD_EXT = /\.(pdf|png|jpe?g)$/i;
+const ACCEPTED_UPLOAD_ATTR = "application/pdf,image/png,image/jpeg";
+
 /**
  * Upload a PDF and either sign it yourself (download) or send it to one or more
  * signers. Shared by the landing page and the documents page so a signed-in
@@ -57,8 +62,17 @@ const UploadCard = ({ onSent }: Props) => {
 
   const pickFile = (f: File | null) => {
     if (!f) return;
+    // a PDF is signed as-is; an image is placed onto a page. Accept by MIME or
+    // extension (drag-drop can omit the MIME); the server verifies the bytes
+    const ok =
+      ACCEPTED_UPLOAD_TYPES.includes(f.type) ||
+      ACCEPTED_UPLOAD_EXT.test(f.name);
+    if (!ok) {
+      setError("Upload a PDF, PNG, or JPEG.");
+      return;
+    }
     setFile(f);
-    if (!docName) setDocName(f.name.replace(/\.pdf$/i, ""));
+    if (!docName) setDocName(f.name.replace(/\.[^./\\]+$/, ""));
     setResult(null);
     setError(null);
   };
@@ -123,6 +137,7 @@ const UploadCard = ({ onSent }: Props) => {
       // ESIGN / UETA: the API refuses to stamp without affirmed consent
       fd.set("consent", "true");
       const res = await fetch("/api/signet/sign", { method: "POST", body: fd });
+      if (res.status === 415) throw new Error("unsupported");
       if (!res.ok) throw new Error();
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -131,8 +146,12 @@ const UploadCard = ({ onSent }: Props) => {
       a.download = `${docName || "document"}-signed.pdf`;
       a.click();
       URL.revokeObjectURL(url);
-    } catch {
-      setError("Could not sign the document. Please try again.");
+    } catch (e) {
+      setError(
+        e instanceof Error && e.message === "unsupported"
+          ? "That file type isn't supported. Upload a PDF, PNG, or JPEG."
+          : "Could not sign the document. Please try again.",
+      );
     } finally {
       setBusy(false);
     }
@@ -167,14 +186,17 @@ const UploadCard = ({ onSent }: Props) => {
         method: "POST",
         body: fd,
       });
+      if (res.status === 415) throw new Error("unsupported");
       if (!res.ok) throw new Error();
       setResult((await res.json()) as SentResult);
       onSent?.();
-    } catch {
+    } catch (e) {
       setError(
-        draft
-          ? "Could not save the draft. Please try again."
-          : "Could not send the document. Please try again.",
+        e instanceof Error && e.message === "unsupported"
+          ? "That file type isn't supported. Upload a PDF, PNG, or JPEG."
+          : draft
+            ? "Could not save the draft. Please try again."
+            : "Could not send the document. Please try again.",
       );
     } finally {
       setBusy(false);
@@ -210,7 +232,7 @@ const UploadCard = ({ onSent }: Props) => {
         ) : (
           <>
             <span className="font-medium text-sm">
-              Drop a PDF here, or click to choose
+              Drop a PDF or image here, or click to choose
             </span>
             <span className="text-muted-foreground text-xs">
               Your document is signed securely and never used to train AI.
@@ -220,7 +242,7 @@ const UploadCard = ({ onSent }: Props) => {
         <input
           ref={inputRef}
           type="file"
-          accept="application/pdf"
+          accept={ACCEPTED_UPLOAD_ATTR}
           hidden
           onChange={(e) => pickFile(e.target.files?.[0] ?? null)}
         />
