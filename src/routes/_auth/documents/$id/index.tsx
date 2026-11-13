@@ -21,6 +21,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import ConfirmDialog from "@/components/signet/ConfirmDialog";
+import NewVersionAction from "@/components/signet/NewVersionAction";
 import PdfViewer from "@/components/signet/PdfViewer";
 import {
   DialogBackdrop,
@@ -54,6 +55,10 @@ interface DocumentDetail {
   id: string;
   name: string;
   status: string;
+  /** 1 for an original, higher for each revision */
+  version?: number;
+  previousVersionId?: string | null;
+  nextVersionId?: string | null;
   createdAt: string;
   signingMode: string;
   hasSignedPdf: boolean;
@@ -283,11 +288,40 @@ function DocumentDetailPage() {
             >
               {data.status}
             </span>
+            {(data.version ?? 1) > 1 && (
+              <span className="rounded-full bg-muted px-2.5 py-0.5 font-medium text-muted-foreground text-xs">
+                Version {data.version}
+              </span>
+            )}
           </div>
           <p className="mt-1 text-muted-foreground text-sm">
             Created {prettyDateTime(data.createdAt)}
             {data.signingMode === "sequential" ? " · signs in order" : ""}
+            {data.previousVersionId && (
+              <>
+                {" · "}
+                <Link
+                  to="/documents/$id"
+                  params={{ id: data.previousVersionId }}
+                  className="underline underline-offset-2 hover:text-foreground"
+                >
+                  previous version
+                </Link>
+              </>
+            )}
           </p>
+          {data.nextVersionId && (
+            <p className="mt-3 rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm">
+              A newer version of this document exists.{" "}
+              <Link
+                to="/documents/$id"
+                params={{ id: data.nextVersionId }}
+                className="font-medium text-primary underline underline-offset-2"
+              >
+                View the latest version
+              </Link>
+            </p>
+          )}
 
           {/* Actions */}
           <div className="mt-5 flex flex-wrap gap-2">
@@ -350,6 +384,12 @@ function DocumentDetailPage() {
                   : "Remind all"}
               </Button>
             )}
+            <NewVersionAction
+              documentId={data.id}
+              documentName={data.name}
+              status={data.status}
+              hasNewerVersion={Boolean(data.nextVersionId)}
+            />
           </div>
 
           {/* Document preview: the signed PDF once sealed, else the original */}

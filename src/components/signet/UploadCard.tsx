@@ -3,6 +3,12 @@ import { useRouteContext } from "@tanstack/react-router";
 import { FileSignature, Plus, Stamp, UploadCloud, X } from "lucide-react";
 import { useRef, useState } from "react";
 
+import {
+  ACCEPTED_UPLOAD_ATTR,
+  UNSUPPORTED_UPLOAD_MSG,
+  isAcceptedUpload,
+} from "@/lib/signet/uploadTypes";
+
 type Mode = "self" | "send";
 
 interface SignerInput {
@@ -29,20 +35,6 @@ const emptySigner = (): SignerInput => ({
   email: "",
   accessCode: "",
 });
-
-/** Formats a sender can upload: a PDF is signed as-is, an image is placed on a page */
-const DOCX_MIME =
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-const ACCEPTED_UPLOAD_TYPES = [
-  "application/pdf",
-  "image/png",
-  "image/jpeg",
-  DOCX_MIME,
-];
-const ACCEPTED_UPLOAD_EXT = /\.(pdf|png|jpe?g|docx)$/i;
-const ACCEPTED_UPLOAD_ATTR = `application/pdf,image/png,image/jpeg,${DOCX_MIME},.docx`;
-/** Shown when a chosen or uploaded file is not a format we can turn into a PDF */
-const UNSUPPORTED_UPLOAD_MSG = "Upload a PDF, image, or Word document (.docx).";
 
 /**
  * Upload a PDF and either sign it yourself (download) or send it to one or more
@@ -73,10 +65,7 @@ const UploadCard = ({ onSent }: Props) => {
     if (!f) return;
     // a PDF is signed as-is; an image is placed onto a page. Accept by MIME or
     // extension (drag-drop can omit the MIME); the server verifies the bytes
-    const ok =
-      ACCEPTED_UPLOAD_TYPES.includes(f.type) ||
-      ACCEPTED_UPLOAD_EXT.test(f.name);
-    if (!ok) {
+    if (!isAcceptedUpload(f)) {
       setError(UNSUPPORTED_UPLOAD_MSG);
       return;
     }

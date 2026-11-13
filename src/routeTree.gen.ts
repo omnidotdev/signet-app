@@ -46,6 +46,7 @@ import { Route as ApiSignetDocumentsIdSignersRouteImport } from './routes/api/si
 import { Route as ApiSignetDocumentsIdSignedRouteImport } from './routes/api/signet/documents/$id/signed'
 import { Route as ApiSignetDocumentsIdSignAsMeRouteImport } from './routes/api/signet/documents/$id/sign-as-me'
 import { Route as ApiSignetDocumentsIdSendRouteImport } from './routes/api/signet/documents/$id/send'
+import { Route as ApiSignetDocumentsIdReviseRouteImport } from './routes/api/signet/documents/$id/revise'
 import { Route as ApiSignetDocumentsIdRemindRouteImport } from './routes/api/signet/documents/$id/remind'
 import { Route as ApiSignetDocumentsIdFileRouteImport } from './routes/api/signet/documents/$id/file'
 import { Route as ApiSignetDocumentsIdFieldsRouteImport } from './routes/api/signet/documents/$id/fields'
@@ -258,6 +259,12 @@ const ApiSignetDocumentsIdSendRoute =
     path: '/send',
     getParentRoute: () => ApiSignetDocumentsIdRoute,
   } as any)
+const ApiSignetDocumentsIdReviseRoute =
+  ApiSignetDocumentsIdReviseRouteImport.update({
+    id: '/revise',
+    path: '/revise',
+    getParentRoute: () => ApiSignetDocumentsIdRoute,
+  } as any)
 const ApiSignetDocumentsIdRemindRoute =
   ApiSignetDocumentsIdRemindRouteImport.update({
     id: '/remind',
@@ -355,6 +362,7 @@ export interface FileRoutesByFullPath {
   '/api/signet/documents/$id/fields': typeof ApiSignetDocumentsIdFieldsRoute
   '/api/signet/documents/$id/file': typeof ApiSignetDocumentsIdFileRoute
   '/api/signet/documents/$id/remind': typeof ApiSignetDocumentsIdRemindRoute
+  '/api/signet/documents/$id/revise': typeof ApiSignetDocumentsIdReviseRoute
   '/api/signet/documents/$id/send': typeof ApiSignetDocumentsIdSendRoute
   '/api/signet/documents/$id/sign-as-me': typeof ApiSignetDocumentsIdSignAsMeRouteWithChildren
   '/api/signet/documents/$id/signed': typeof ApiSignetDocumentsIdSignedRoute
@@ -401,6 +409,7 @@ export interface FileRoutesByTo {
   '/api/signet/documents/$id/fields': typeof ApiSignetDocumentsIdFieldsRoute
   '/api/signet/documents/$id/file': typeof ApiSignetDocumentsIdFileRoute
   '/api/signet/documents/$id/remind': typeof ApiSignetDocumentsIdRemindRoute
+  '/api/signet/documents/$id/revise': typeof ApiSignetDocumentsIdReviseRoute
   '/api/signet/documents/$id/send': typeof ApiSignetDocumentsIdSendRoute
   '/api/signet/documents/$id/sign-as-me': typeof ApiSignetDocumentsIdSignAsMeRouteWithChildren
   '/api/signet/documents/$id/signed': typeof ApiSignetDocumentsIdSignedRoute
@@ -451,6 +460,7 @@ export interface FileRoutesById {
   '/api/signet/documents/$id/fields': typeof ApiSignetDocumentsIdFieldsRoute
   '/api/signet/documents/$id/file': typeof ApiSignetDocumentsIdFileRoute
   '/api/signet/documents/$id/remind': typeof ApiSignetDocumentsIdRemindRoute
+  '/api/signet/documents/$id/revise': typeof ApiSignetDocumentsIdReviseRoute
   '/api/signet/documents/$id/send': typeof ApiSignetDocumentsIdSendRoute
   '/api/signet/documents/$id/sign-as-me': typeof ApiSignetDocumentsIdSignAsMeRouteWithChildren
   '/api/signet/documents/$id/signed': typeof ApiSignetDocumentsIdSignedRoute
@@ -501,6 +511,7 @@ export interface FileRouteTypes {
     | '/api/signet/documents/$id/fields'
     | '/api/signet/documents/$id/file'
     | '/api/signet/documents/$id/remind'
+    | '/api/signet/documents/$id/revise'
     | '/api/signet/documents/$id/send'
     | '/api/signet/documents/$id/sign-as-me'
     | '/api/signet/documents/$id/signed'
@@ -547,6 +558,7 @@ export interface FileRouteTypes {
     | '/api/signet/documents/$id/fields'
     | '/api/signet/documents/$id/file'
     | '/api/signet/documents/$id/remind'
+    | '/api/signet/documents/$id/revise'
     | '/api/signet/documents/$id/send'
     | '/api/signet/documents/$id/sign-as-me'
     | '/api/signet/documents/$id/signed'
@@ -596,6 +608,7 @@ export interface FileRouteTypes {
     | '/api/signet/documents/$id/fields'
     | '/api/signet/documents/$id/file'
     | '/api/signet/documents/$id/remind'
+    | '/api/signet/documents/$id/revise'
     | '/api/signet/documents/$id/send'
     | '/api/signet/documents/$id/sign-as-me'
     | '/api/signet/documents/$id/signed'
@@ -886,6 +899,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiSignetDocumentsIdSendRouteImport
       parentRoute: typeof ApiSignetDocumentsIdRoute
     }
+    '/api/signet/documents/$id/revise': {
+      id: '/api/signet/documents/$id/revise'
+      path: '/revise'
+      fullPath: '/api/signet/documents/$id/revise'
+      preLoaderRoute: typeof ApiSignetDocumentsIdReviseRouteImport
+      parentRoute: typeof ApiSignetDocumentsIdRoute
+    }
     '/api/signet/documents/$id/remind': {
       id: '/api/signet/documents/$id/remind'
       path: '/remind'
@@ -1065,6 +1085,7 @@ interface ApiSignetDocumentsIdRouteChildren {
   ApiSignetDocumentsIdFieldsRoute: typeof ApiSignetDocumentsIdFieldsRoute
   ApiSignetDocumentsIdFileRoute: typeof ApiSignetDocumentsIdFileRoute
   ApiSignetDocumentsIdRemindRoute: typeof ApiSignetDocumentsIdRemindRoute
+  ApiSignetDocumentsIdReviseRoute: typeof ApiSignetDocumentsIdReviseRoute
   ApiSignetDocumentsIdSendRoute: typeof ApiSignetDocumentsIdSendRoute
   ApiSignetDocumentsIdSignAsMeRoute: typeof ApiSignetDocumentsIdSignAsMeRouteWithChildren
   ApiSignetDocumentsIdSignedRoute: typeof ApiSignetDocumentsIdSignedRoute
@@ -1078,6 +1099,7 @@ const ApiSignetDocumentsIdRouteChildren: ApiSignetDocumentsIdRouteChildren = {
   ApiSignetDocumentsIdFieldsRoute: ApiSignetDocumentsIdFieldsRoute,
   ApiSignetDocumentsIdFileRoute: ApiSignetDocumentsIdFileRoute,
   ApiSignetDocumentsIdRemindRoute: ApiSignetDocumentsIdRemindRoute,
+  ApiSignetDocumentsIdReviseRoute: ApiSignetDocumentsIdReviseRoute,
   ApiSignetDocumentsIdSendRoute: ApiSignetDocumentsIdSendRoute,
   ApiSignetDocumentsIdSignAsMeRoute:
     ApiSignetDocumentsIdSignAsMeRouteWithChildren,
