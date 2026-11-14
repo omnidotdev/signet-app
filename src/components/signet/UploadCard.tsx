@@ -141,7 +141,7 @@ const UploadCard = ({ onSent }: Props) => {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${docName || "document"}-signed.pdf`;
+      a.download = `${docName || "document"}.pdf`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (e) {
