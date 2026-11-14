@@ -1,57 +1,26 @@
 import { Loader2 } from "lucide-react";
-import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
-import { useEffect, useState } from "react";
+import { useRef, useState } from "react";
+
+import {
+  PdfPageSurface,
+  ViewerControls,
+  pageBoxStyle,
+  usePdfDocument,
+} from "./PdfPages";
 
 /**
- * Render a PDF to page images with pdf.js, so the preview looks the same in
- * every browser (an inline `<iframe>` PDF renders inconsistently and often not
- * at all on mobile). Falls back to a plain link if rendering fails.
+ * Show a PDF with pdf.js, so it looks the same in every browser (an inline
+ * `<iframe>` PDF renders inconsistently and often not at all on mobile): sharp
+ * pages that render as they near the screen, text that can be found with the
+ * browser's find and selected, and zoom. Falls back to a plain link if the
+ * document cannot be read.
  */
 const PdfViewer = ({ url, label }: { url: string; label: string }) => {
-  const [pages, setPages] = useState<string[]>([]);
-  const [state, setState] = useState<"loading" | "error" | "ready">("loading");
+  const { pdf, pages, error } = usePdfDocument(url);
+  const [zoom, setZoom] = useState(1);
+  const docRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    setState("loading");
-    (async () => {
-      try {
-        const pdfjs = await import("pdfjs-dist");
-        pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
-        const pdf = await pdfjs.getDocument({ url }).promise;
-        const out: string[] = [];
-        for (let p = 1; p <= pdf.numPages; p++) {
-          const page = await pdf.getPage(p);
-          const viewport = page.getViewport({ scale: 1.3 });
-          const canvas = document.createElement("canvas");
-          canvas.width = viewport.width;
-          canvas.height = viewport.height;
-          const ctx = canvas.getContext("2d");
-          if (!ctx) continue;
-          await page.render({ canvas, canvasContext: ctx, viewport }).promise;
-          out.push(canvas.toDataURL("image/png"));
-        }
-        if (!cancelled) {
-          setPages(out);
-          setState("ready");
-        }
-      } catch {
-        if (!cancelled) setState("error");
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [url]);
-
-  if (state === "loading")
-    return (
-      <div className="flex items-center justify-center gap-2 py-12 text-muted-foreground text-sm">
-        <Loader2 className="size-4 animate-spin" /> Loading the document.
-      </div>
-    );
-
-  if (state === "error")
+  if (error)
     return (
       <div className="px-5 py-12 text-center text-muted-foreground text-sm">
         Could not render a preview here.{" "}
@@ -66,18 +35,41 @@ const PdfViewer = ({ url, label }: { url: string; label: string }) => {
       </div>
     );
 
+  if (!pdf || pages.length === 0)
+    return (
+      <div className="flex items-center justify-center gap-2 py-12 text-muted-foreground text-sm">
+        <Loader2 className="size-4 animate-spin" /> Loading the document.
+      </div>
+    );
+
   return (
-    <div className="max-h-[44rem] space-y-3 overflow-y-auto bg-muted/40 p-3">
-      {pages.map((src, i) => (
-        <img
-          // biome-ignore lint/suspicious/noArrayIndexKey: pages are a fixed ordered list
-          key={i}
-          src={src}
-          alt={`${label}, page ${i + 1}`}
-          className="mx-auto block w-full max-w-full rounded border border-border shadow-sm"
-        />
-      ))}
-    </div>
+    <>
+      <section
+        ref={docRef}
+        aria-label={label}
+        className="space-y-3 overflow-x-auto bg-muted/40 p-3"
+      >
+        {pages.map((pg, i) => {
+          const pageNo = i + 1;
+          return (
+            <div
+              key={pageNo}
+              data-page={pageNo}
+              className="relative mx-auto rounded border border-border shadow-sm"
+              style={pageBoxStyle(pg, zoom)}
+            >
+              <PdfPageSurface pdf={pdf} pageNumber={pageNo} page={pg} />
+            </div>
+          );
+        })}
+      </section>
+      <ViewerControls
+        containerRef={docRef}
+        pageCount={pages.length}
+        zoom={zoom}
+        onZoom={setZoom}
+      />
+    </>
   );
 };
 

@@ -12,7 +12,6 @@ import {
   UploadCloud,
   XCircle,
 } from "lucide-react";
-import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import {
   useCallback,
   useEffect,
@@ -44,6 +43,13 @@ import {
   textFontSizeCqh,
   toSignatureFont,
 } from "@/lib/signet/signatureFonts";
+import {
+  PdfPageSurface,
+  ViewerControls,
+  pageBoxStyle,
+  usePdfBytes,
+  usePdfDocument,
+} from "./PdfPages";
 
 import type { SignatureFont } from "@/lib/signet/signatureFonts";
 
@@ -82,21 +88,7 @@ interface FillData {
   fields: Field[];
 }
 
-interface RenderedPage {
-  width: number;
-  height: number;
-  /** page width in PDF points, for proportional field placement */
-  widthPt: number;
-  /** page height in PDF points (bottom-left origin), for field placement */
-  heightPt: number;
-  src: string;
-}
-
-const SCALE = 1.25;
 const SIG_STORAGE_KEY = "signet.sig";
-
-const base64ToBytes = (b64: string) =>
-  Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
 
 const initialsOf = (name: string) =>
   name
@@ -159,7 +151,12 @@ const SignerFill = ({
   const [otpCode, setOtpCode] = useState("");
   const [otpError, setOtpError] = useState<string | null>(null);
   const [otpBusy, setOtpBusy] = useState(false);
-  const [pages, setPages] = useState<RenderedPage[]>([]);
+  const pdfBytes = usePdfBytes(
+    data && !data.alreadySigned && !data.waitingFor ? data.pdfBase64 : null,
+  );
+  const { pdf, pages, error: pdfError } = usePdfDocument(pdfBytes);
+  const [zoom, setZoom] = useState(1);
+  const docRef = useRef<HTMLDivElement>(null);
   const [mode, setMode] = useState<"type" | "draw" | "upload">("type");
   const [typedName, setTypedName] = useState("");
   // handwriting style of a typed signature, previewed here and embedded into
@@ -364,44 +361,9 @@ const SignerFill = ({
     reader.readAsDataURL(f);
   };
 
-  // Render the PDF to page images once the data is available
   useEffect(() => {
-    if (!data || data.alreadySigned || data.waitingFor) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const pdfjs = await import("pdfjs-dist");
-        pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
-        const pdf = await pdfjs.getDocument({
-          data: base64ToBytes(data.pdfBase64),
-        }).promise;
-        const out: RenderedPage[] = [];
-        for (let p = 1; p <= pdf.numPages; p++) {
-          const page = await pdf.getPage(p);
-          const viewport = page.getViewport({ scale: SCALE });
-          const canvas = document.createElement("canvas");
-          canvas.width = viewport.width;
-          canvas.height = viewport.height;
-          const ctx = canvas.getContext("2d");
-          if (!ctx) continue;
-          await page.render({ canvas, canvasContext: ctx, viewport }).promise;
-          out.push({
-            width: viewport.width,
-            height: viewport.height,
-            widthPt: viewport.width / SCALE,
-            heightPt: viewport.height / SCALE,
-            src: canvas.toDataURL("image/png"),
-          });
-        }
-        if (!cancelled) setPages(out);
-      } catch {
-        if (!cancelled) setState("error");
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [data]);
+    if (pdfError) setState("error");
+  }, [pdfError]);
 
   // Signature pad drawing
   const padPoint = (e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -552,8 +514,13 @@ const SignerFill = ({
       const vh = window.innerHeight || document.documentElement.clientHeight;
       // the sticky header and toolbar cover the top; the guide's own strip
       // covers the bottom
-      const toolbar = toolbarRef.current?.getBoundingClientRect().bottom ?? 0;
-      const next = guidePlacement(el.getBoundingClientRect(), {
+      // the sticky toolbar covers the top of the document only when it sits
+      // above it; beside it (wide screens) only the site header does
+      const rect = el.getBoundingClientRect();
+      const bar = toolbarRef.current?.getBoundingClientRect();
+      const toolbar =
+        bar && bar.left < rect.right && bar.right > rect.left ? bar.bottom : 64;
+      const next = guidePlacement(rect, {
         top: Math.max(toolbar, 0),
         bottom: vh - 80,
       });
@@ -844,7 +811,7 @@ const SignerFill = ({
   // --- The signing surface ---
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-5 py-10">
+    <div className="mx-auto w-full max-w-7xl px-5 py-10">
       <h1 className="font-semibold text-2xl tracking-tight">
         {data.documentName}
       </h1>
@@ -852,248 +819,264 @@ const SignerFill = ({
         {data.signerName}, review the document and sign where it is highlighted.
       </p>
 
-      {/* Adopt signature */}
-      <div
-        ref={adoptRef}
-        className="mt-6 rounded-2xl border border-border bg-card p-5"
-      >
-        <span className="font-medium text-sm">Adopt your signature</span>
-        <div className="mt-3 inline-flex rounded-lg border border-border bg-muted/50 p-1 text-sm">
-          {(coarsePointer
-            ? (["draw", "type", "upload"] as const)
-            : (["type", "draw", "upload"] as const)
-          ).map((m) => (
-            <TabButton key={m} active={mode === m} onClick={() => setMode(m)}>
-              {m === "type" ? "Type" : m === "draw" ? "Draw" : "Upload"}
-            </TabButton>
-          ))}
-        </div>
-
-        {mode === "type" && (
-          <>
-            <input
-              className="input mt-3"
-              value={typedName}
-              onChange={(e) => setTypedName(e.target.value)}
-              placeholder="Your full name"
-            />
-            <fieldset className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-              <legend className="sr-only">Signature style</legend>
-              {SIGNATURE_FONT_OPTIONS.map((o) => (
-                <label
-                  key={o.id}
-                  className={`flex h-16 cursor-pointer flex-col items-center justify-center gap-0.5 overflow-hidden rounded-lg border px-2 transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary ${
-                    signatureFont === o.id
-                      ? "border-primary bg-primary/5"
-                      : "border-border hover:border-primary/60"
-                  }`}
+      {/* On wide screens the document takes the main column and the signing
+          controls stay in view beside it; on narrow ones they stack */}
+      <div className="mt-6 grid gap-6 lg:grid-cols-3 lg:items-start">
+        <aside className="lg:sticky lg:top-20 lg:order-2 lg:max-h-screen lg:overflow-y-auto lg:pb-24">
+          {/* Adopt signature */}
+          <div
+            ref={adoptRef}
+            className="rounded-2xl border border-border bg-card p-5"
+          >
+            <span className="font-medium text-sm">Adopt your signature</span>
+            <div className="mt-3 inline-flex rounded-lg border border-border bg-muted/50 p-1 text-sm">
+              {(coarsePointer
+                ? (["draw", "type", "upload"] as const)
+                : (["type", "draw", "upload"] as const)
+              ).map((m) => (
+                <TabButton
+                  key={m}
+                  active={mode === m}
+                  onClick={() => setMode(m)}
                 >
-                  <input
-                    type="radio"
-                    name="signature-font"
-                    value={o.id}
-                    checked={signatureFont === o.id}
-                    onChange={() => setSignatureFont(o.id)}
-                    className="sr-only"
-                  />
-                  <span
-                    className="max-w-full truncate text-lg text-slate-800"
-                    style={signatureFontStyle(o.id)}
-                  >
-                    {typedName.trim() || "Your name"}
-                  </span>
-                  <span className="text-muted-foreground text-xs">
-                    {o.label}
-                  </span>
-                </label>
+                  {m === "type" ? "Type" : m === "draw" ? "Draw" : "Upload"}
+                </TabButton>
               ))}
-            </fieldset>
-          </>
-        )}
-        {mode === "draw" && (
-          <div className="mt-3">
-            <canvas
-              ref={padRef}
-              width={420}
-              height={120}
-              onPointerDown={onPadDown}
-              onPointerMove={onPadMove}
-              onPointerUp={onPadUp}
-              className="w-full max-w-[420px] touch-none rounded-lg border border-border border-dashed bg-background"
-            />
-            <button
-              type="button"
-              onClick={clearPad}
-              className="mt-1 text-muted-foreground text-sm underline-offset-4 hover:underline"
-            >
-              Clear
-            </button>
-          </div>
-        )}
-        {mode === "upload" && (
-          <div className="mt-3">
-            {uploadedImage ? (
-              <div className="flex max-w-[420px] items-center justify-center rounded-lg border border-border bg-background p-3">
-                <img
-                  src={uploadedImage}
-                  alt="Uploaded signature"
-                  className="max-h-24 max-w-full"
-                />
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => uploadRef.current?.click()}
-                className="flex w-full max-w-[420px] flex-col items-center gap-1.5 rounded-lg border border-border border-dashed bg-background px-4 py-6 text-muted-foreground text-sm hover:border-primary/60 hover:bg-muted/40"
-              >
-                <UploadCloud className="size-6" />
-                Upload an image of your signature (PNG or JPG)
-              </button>
-            )}
-            <input
-              ref={uploadRef}
-              type="file"
-              accept="image/png,image/jpeg"
-              hidden
-              onChange={(e) => onUploadFile(e.target.files?.[0] ?? null)}
-            />
-            {uploadedImage && (
-              <button
-                type="button"
-                onClick={() => {
-                  setUploadedImage(null);
-                  if (uploadRef.current) uploadRef.current.value = "";
-                }}
-                className="mt-1 text-muted-foreground text-sm underline-offset-4 hover:underline"
-              >
-                Remove
-              </button>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Toolbar */}
-      <div
-        ref={toolbarRef}
-        className="sticky top-16 z-10 mt-6 flex flex-col gap-2 border-border border-b bg-background/90 py-3 backdrop-blur sm:flex-row sm:items-center sm:gap-3"
-      >
-        <span className="text-muted-foreground text-sm sm:flex-1">
-          {sigCount
-            ? `Sign in ${sigCount} place${sigCount === 1 ? "" : "s"}${hasDates ? "; dates fill in automatically" : ""}.`
-            : "Click Finish to apply your signature."}
-        </span>
-        <Button
-          className="w-full shrink-0 sm:w-auto"
-          onClick={finish}
-          disabled={submitting || !agreed}
-        >
-          {submitting ? "Signing..." : "Finish and sign"}
-        </Button>
-      </div>
-
-      {/* Electronic-records consent (ESIGN / UETA) */}
-      <label className="mt-3 flex items-start gap-2.5 text-muted-foreground text-sm">
-        <input
-          type="checkbox"
-          checked={agreed}
-          onChange={(e) => setAgreed(e.target.checked)}
-          className="mt-0.5 size-4 shrink-0"
-        />
-        <span>
-          I agree to sign this document electronically, and that my electronic
-          signature and initials are the legal equivalent of my handwritten
-          signature and are binding.
-        </span>
-      </label>
-      {submitError && (
-        <p className="mt-2 text-destructive text-sm">{submitError}</p>
-      )}
-      <button
-        type="button"
-        onClick={() => setDeclineOpen(true)}
-        className="mt-2 text-muted-foreground text-sm underline-offset-4 hover:text-destructive hover:underline"
-      >
-        Decline to sign
-      </button>
-
-      {/* Document */}
-      <div className="mt-6 space-y-4">
-        {pages.length === 0 ? (
-          <>
-            <div className="flex items-center justify-center gap-2 py-3 text-muted-foreground text-sm">
-              <Loader2 className="size-4 animate-spin" /> Rendering the
-              document.
             </div>
-            {[0, 1].map((k) => (
-              <div
-                key={k}
-                className="mx-auto w-full animate-pulse rounded bg-muted"
-                style={{ maxWidth: 612, aspectRatio: "612 / 792" }}
-              />
-            ))}
-          </>
-        ) : (
-          pages.map((pg, i) => {
-            const pageNo = i + 1;
-            return (
-              <div
-                key={pageNo}
-                className="relative mx-auto w-full shadow-sm"
-                style={{
-                  maxWidth: pg.width,
-                  aspectRatio: `${pg.width} / ${pg.height}`,
-                }}
-              >
-                <img
-                  src={pg.src}
-                  alt={`Page ${pageNo}`}
-                  className="block w-full"
+
+            {mode === "type" && (
+              <>
+                <input
+                  className="input mt-3"
+                  value={typedName}
+                  onChange={(e) => setTypedName(e.target.value)}
+                  placeholder="Your full name"
                 />
-                {data.fields
-                  .filter((f) => f.page === pageNo)
-                  .map((f) => (
-                    <FieldOverlay
-                      key={f.id}
-                      field={f}
-                      pageWidthPt={pg.widthPt}
-                      pageHeightPt={pg.heightPt}
-                      today={today}
-                      typedName={typedName}
-                      signatureFont={
-                        mode === "type" ? signatureFont : "classic"
-                      }
-                      image={activeImage}
-                      highlight={highlightId === f.id}
-                      color={data.signerColor || "#be6221"}
-                      textValue={textValues[f.id] ?? ""}
-                      onText={(v) =>
-                        setTextValues((prev) => {
-                          // selecting a radio clears its group siblings
-                          if (f.type === "radio" && f.groupId) {
-                            const next = { ...prev };
-                            for (const other of data.fields) {
-                              if (
-                                other.type === "radio" &&
-                                other.groupId === f.groupId
-                              ) {
-                                next[other.id] = "";
-                              }
-                            }
-                            next[f.id] = v;
-                            return next;
-                          }
-                          return { ...prev, [f.id]: v };
-                        })
-                      }
-                      onAdoptClick={focusAdopt}
-                    />
+                <fieldset className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  <legend className="sr-only">Signature style</legend>
+                  {SIGNATURE_FONT_OPTIONS.map((o) => (
+                    <label
+                      key={o.id}
+                      className={`flex h-16 cursor-pointer flex-col items-center justify-center gap-0.5 overflow-hidden rounded-lg border px-2 transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary ${
+                        signatureFont === o.id
+                          ? "border-primary bg-primary/5"
+                          : "border-border hover:border-primary/60"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="signature-font"
+                        value={o.id}
+                        checked={signatureFont === o.id}
+                        onChange={() => setSignatureFont(o.id)}
+                        className="sr-only"
+                      />
+                      <span
+                        className="max-w-full truncate text-lg text-slate-800"
+                        style={signatureFontStyle(o.id)}
+                      >
+                        {typedName.trim() || "Your name"}
+                      </span>
+                      <span className="text-muted-foreground text-xs">
+                        {o.label}
+                      </span>
+                    </label>
                   ))}
+                </fieldset>
+              </>
+            )}
+            {mode === "draw" && (
+              <div className="mt-3">
+                <canvas
+                  ref={padRef}
+                  width={420}
+                  height={120}
+                  onPointerDown={onPadDown}
+                  onPointerMove={onPadMove}
+                  onPointerUp={onPadUp}
+                  className="w-full max-w-[420px] touch-none rounded-lg border border-border border-dashed bg-background"
+                />
+                <button
+                  type="button"
+                  onClick={clearPad}
+                  className="mt-1 text-muted-foreground text-sm underline-offset-4 hover:underline"
+                >
+                  Clear
+                </button>
               </div>
-            );
-          })
-        )}
+            )}
+            {mode === "upload" && (
+              <div className="mt-3">
+                {uploadedImage ? (
+                  <div className="flex max-w-[420px] items-center justify-center rounded-lg border border-border bg-background p-3">
+                    <img
+                      src={uploadedImage}
+                      alt="Uploaded signature"
+                      className="max-h-24 max-w-full"
+                    />
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => uploadRef.current?.click()}
+                    className="flex w-full max-w-[420px] flex-col items-center gap-1.5 rounded-lg border border-border border-dashed bg-background px-4 py-6 text-muted-foreground text-sm hover:border-primary/60 hover:bg-muted/40"
+                  >
+                    <UploadCloud className="size-6" />
+                    Upload an image of your signature (PNG or JPG)
+                  </button>
+                )}
+                <input
+                  ref={uploadRef}
+                  type="file"
+                  accept="image/png,image/jpeg"
+                  hidden
+                  onChange={(e) => onUploadFile(e.target.files?.[0] ?? null)}
+                />
+                {uploadedImage && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUploadedImage(null);
+                      if (uploadRef.current) uploadRef.current.value = "";
+                    }}
+                    className="mt-1 text-muted-foreground text-sm underline-offset-4 hover:underline"
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Toolbar */}
+          <div
+            ref={toolbarRef}
+            className="sticky top-16 z-10 mt-6 flex flex-col gap-2 border-border border-b bg-background/90 py-3 backdrop-blur sm:flex-row sm:items-center sm:gap-3"
+          >
+            <span className="text-muted-foreground text-sm sm:flex-1">
+              {sigCount
+                ? `Sign in ${sigCount} place${sigCount === 1 ? "" : "s"}${hasDates ? "; dates fill in automatically" : ""}.`
+                : "Click Finish to apply your signature."}
+            </span>
+            <Button
+              className="w-full shrink-0 sm:w-auto"
+              onClick={finish}
+              disabled={submitting || !agreed}
+            >
+              {submitting ? "Signing..." : "Finish and sign"}
+            </Button>
+          </div>
+
+          {/* Electronic-records consent (ESIGN / UETA) */}
+          <label className="mt-3 flex items-start gap-2.5 text-muted-foreground text-sm">
+            <input
+              type="checkbox"
+              checked={agreed}
+              onChange={(e) => setAgreed(e.target.checked)}
+              className="mt-0.5 size-4 shrink-0"
+            />
+            <span>
+              I agree to sign this document electronically, and that my
+              electronic signature and initials are the legal equivalent of my
+              handwritten signature and are binding.
+            </span>
+          </label>
+          {submitError && (
+            <p className="mt-2 text-destructive text-sm">{submitError}</p>
+          )}
+          <button
+            type="button"
+            onClick={() => setDeclineOpen(true)}
+            className="mt-2 text-muted-foreground text-sm underline-offset-4 hover:text-destructive hover:underline"
+          >
+            Decline to sign
+          </button>
+        </aside>
+
+        {/* Document */}
+        <section
+          ref={docRef}
+          className="space-y-4 overflow-x-auto rounded-xl bg-muted/40 p-3 lg:order-1 lg:col-span-2"
+        >
+          {pages.length === 0 ? (
+            <>
+              <div className="flex items-center justify-center gap-2 py-3 text-muted-foreground text-sm">
+                <Loader2 className="size-4 animate-spin" /> Rendering the
+                document.
+              </div>
+              {[0, 1].map((k) => (
+                <div
+                  key={k}
+                  className="mx-auto w-full animate-pulse rounded bg-muted"
+                  style={{ maxWidth: 612, aspectRatio: "612 / 792" }}
+                />
+              ))}
+            </>
+          ) : (
+            pages.map((pg, i) => {
+              const pageNo = i + 1;
+              return (
+                <div
+                  key={pageNo}
+                  data-page={pageNo}
+                  className="relative mx-auto shadow-sm"
+                  style={pageBoxStyle(pg, zoom)}
+                >
+                  {pdf && (
+                    <PdfPageSurface pdf={pdf} pageNumber={pageNo} page={pg} />
+                  )}
+                  {data.fields
+                    .filter((f) => f.page === pageNo)
+                    .map((f) => (
+                      <FieldOverlay
+                        key={f.id}
+                        field={f}
+                        pageWidthPt={pg.widthPt}
+                        pageHeightPt={pg.heightPt}
+                        today={today}
+                        typedName={typedName}
+                        signatureFont={
+                          mode === "type" ? signatureFont : "classic"
+                        }
+                        image={activeImage}
+                        highlight={highlightId === f.id}
+                        color={data.signerColor || "#be6221"}
+                        textValue={textValues[f.id] ?? ""}
+                        onText={(v) =>
+                          setTextValues((prev) => {
+                            // selecting a radio clears its group siblings
+                            if (f.type === "radio" && f.groupId) {
+                              const next = { ...prev };
+                              for (const other of data.fields) {
+                                if (
+                                  other.type === "radio" &&
+                                  other.groupId === f.groupId
+                                ) {
+                                  next[other.id] = "";
+                                }
+                              }
+                              next[f.id] = v;
+                              return next;
+                            }
+                            return { ...prev, [f.id]: v };
+                          })
+                        }
+                        onAdoptClick={focusAdopt}
+                      />
+                    ))}
+                </div>
+              );
+            })
+          )}
+        </section>
       </div>
+
+      <ViewerControls
+        containerRef={docRef}
+        pageCount={pages.length}
+        zoom={zoom}
+        onZoom={setZoom}
+      />
 
       {/* Floating guide to the next field (or back to the signature): shown
           only while that field is off screen, pointing up or down toward it */}

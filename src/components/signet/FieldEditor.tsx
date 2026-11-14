@@ -1,5 +1,5 @@
 import { Button } from "@omnidotdev/thornberry/button";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, useRouteContext } from "@tanstack/react-router";
 import {
   CalendarDays,
   ChevronDown,
@@ -13,7 +13,6 @@ import {
   Type as TypeIcon,
   X,
 } from "lucide-react";
-import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -27,8 +26,15 @@ import {
 } from "@/components/ui/dialog";
 import { DATE_FORMAT_OPTIONS } from "@/lib/signet/dateFormat";
 import { DEFAULT_INK } from "@/lib/signet/ink";
+import {
+  PdfPageSurface,
+  ViewerControls,
+  pageBoxStyle,
+  usePdfBytes,
+  usePdfDocument,
+} from "./PdfPages";
 
-/** The default stamped ink (the signing blue), shown when a field has no color */
+import type { PdfPageInfo } from "./PdfPages";
 
 type FieldType =
   | "signature"
@@ -76,15 +82,7 @@ interface EditorData {
   signers: EditorSigner[];
   fields: Omit<EditorField, "key">[];
 }
-interface RenderedPage {
-  width: number;
-  height: number;
-  widthPt: number;
-  heightPt: number;
-  src: string;
-}
 
-const SCALE = 1.25;
 const DEFAULTS: Record<FieldType, { w: number; h: number }> = {
   signature: { w: 200, h: 44 },
   initials: { w: 96, h: 44 },
@@ -108,8 +106,6 @@ const TYPE_META: { type: FieldType; label: string; icon: typeof PenLine }[] = [
   { type: "checkbox", label: "Checkbox", icon: SquareCheck },
 ];
 
-const base64ToBytes = (b64: string) =>
-  Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
 const uid = () => Math.random().toString(36).slice(2);
 const clamp = (v: number, lo: number, hi: number) =>
   Math.max(lo, Math.min(hi, v));
@@ -121,9 +117,14 @@ const clamp = (v: number, lo: number, hi: number) =>
  */
 const FieldEditor = ({ token }: { token: string }) => {
   const navigate = useNavigate();
+  const { auth } = useRouteContext({ strict: false });
+  const myEmail = auth?.user?.email?.toLowerCase() ?? null;
   const [data, setData] = useState<EditorData | null>(null);
   const [state, setState] = useState<"loading" | "error" | "ready">("loading");
-  const [pages, setPages] = useState<RenderedPage[]>([]);
+  const pdfBytes = usePdfBytes(data?.pdfBase64);
+  const { pdf, pages, error: pdfError } = usePdfDocument(pdfBytes);
+  const [zoom, setZoom] = useState(1);
+  const docRef = useRef<HTMLDivElement>(null);
   const [fields, setFields] = useState<EditorField[]>([]);
   const [activeSigner, setActiveSigner] = useState<string | null>(null);
   // signers are held separately from `data` so adding/editing/removing one does
@@ -175,44 +176,9 @@ const FieldEditor = ({ token }: { token: string }) => {
     };
   }, [token]);
 
-  // Render the PDF
   useEffect(() => {
-    if (!data) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const pdfjs = await import("pdfjs-dist");
-        pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
-        const pdf = await pdfjs.getDocument({
-          data: base64ToBytes(data.pdfBase64),
-        }).promise;
-        const out: RenderedPage[] = [];
-        for (let p = 1; p <= pdf.numPages; p++) {
-          const page = await pdf.getPage(p);
-          const viewport = page.getViewport({ scale: SCALE });
-          const canvas = document.createElement("canvas");
-          canvas.width = viewport.width;
-          canvas.height = viewport.height;
-          const ctx = canvas.getContext("2d");
-          if (!ctx) continue;
-          await page.render({ canvas, canvasContext: ctx, viewport }).promise;
-          out.push({
-            width: viewport.width,
-            height: viewport.height,
-            widthPt: viewport.width / SCALE,
-            heightPt: viewport.height / SCALE,
-            src: canvas.toDataURL("image/png"),
-          });
-        }
-        if (!cancelled) setPages(out);
-      } catch {
-        if (!cancelled) setState("error");
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [data]);
+    if (pdfError) setState("error");
+  }, [pdfError]);
 
   const signerColor = useCallback(
     (signerId: string | null) =>
@@ -299,7 +265,7 @@ const FieldEditor = ({ token }: { token: string }) => {
   const onPageClick = (
     e: React.MouseEvent,
     pageNo: number,
-    pg: RenderedPage,
+    pg: PdfPageInfo,
   ) => {
     if (!addType) return;
     const rect = e.currentTarget.getBoundingClientRect();
@@ -355,7 +321,7 @@ const FieldEditor = ({ token }: { token: string }) => {
     e: React.PointerEvent,
     field: EditorField,
     mode: "move" | "resize",
-    pg: RenderedPage,
+    pg: PdfPageInfo,
   ) => {
     e.stopPropagation();
     const pageEl = (e.currentTarget as HTMLElement).closest(
@@ -375,7 +341,7 @@ const FieldEditor = ({ token }: { token: string }) => {
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
   };
 
-  const onPointerMove = (e: React.PointerEvent, pg: RenderedPage) => {
+  const onPointerMove = (e: React.PointerEvent, pg: PdfPageInfo) => {
     const d = dragRef.current;
     if (!d) return;
     const dxPt = (e.clientX - d.startX) * d.ptPerPx;
@@ -479,14 +445,30 @@ const FieldEditor = ({ token }: { token: string }) => {
       const res = await fetch(`/api/signet/documents/${token}/send`, {
         method: "POST",
       });
+      const body = (await res.json().catch(() => ({}))) as {
+        signNow?: boolean;
+      };
       if (!res.ok) throw new Error();
-      toast.success("Sent for signature.");
-      navigate({ to: "/documents/$id", params: { id: token } });
+      if (body.signNow) {
+        // the sender is a signer up now: sign here rather than by email
+        if (signers.length > 1) toast.success("Sent. Now add your signature.");
+        navigate({ to: "/documents/$id/sign", params: { id: token } });
+      } else {
+        toast.success("Sent for signature.");
+        navigate({ to: "/documents/$id", params: { id: token } });
+      }
     } catch {
       toast.error("Could not send the document.");
       setSending(false);
     }
   };
+
+  // whether the sender is one of the signers (or the only one), which turns
+  // "Send" into signing in the app
+  const isMe = (sg: EditorSigner) =>
+    Boolean(myEmail && sg.email?.toLowerCase() === myEmail);
+  const meSigning = signers.some(isMe);
+  const onlyMe = signers.length > 0 && signers.every(isMe);
 
   if (state === "loading") return <Centered>Loading the editor.</Centered>;
   if (state === "error" || !data)
@@ -503,10 +485,13 @@ const FieldEditor = ({ token }: { token: string }) => {
     );
 
   return (
-    <div className="mx-auto w-full max-w-4xl px-5 py-8">
+    <div className="mx-auto w-full max-w-7xl px-5 py-8">
       <h1 className="font-semibold text-2xl tracking-tight">{data.name}</h1>
       <p className="mt-1 text-muted-foreground text-sm">
-        Place a field, then click the page to drop it. Drag to move, use the
+        {onlyMe
+          ? "Check where your signature goes, then continue to sign."
+          : "Check where each signer signs, then send. Nothing is emailed until you do."}{" "}
+        To add a field, pick a type and click the page. Drag to move, use the
         corner to resize.
       </p>
 
@@ -639,7 +624,13 @@ const FieldEditor = ({ token }: { token: string }) => {
             {saving ? "Saving..." : "Save"}
           </Button>
           <Button disabled={sending} onClick={sendNow}>
-            {sending ? "Sending..." : "Save and send"}
+            {sending
+              ? "Working..."
+              : onlyMe
+                ? "Continue to sign"
+                : meSigning
+                  ? "Send and sign"
+                  : "Send"}
           </Button>
         </div>
 
@@ -698,7 +689,10 @@ const FieldEditor = ({ token }: { token: string }) => {
       </div>
 
       {/* Document */}
-      <div className="mt-6 space-y-4">
+      <div
+        ref={docRef}
+        className="mt-6 space-y-4 overflow-x-auto rounded-xl bg-muted/40 p-3"
+      >
         {pages.length === 0 ? (
           <div className="flex items-center justify-center gap-2 py-6 text-muted-foreground text-sm">
             <Loader2 className="size-4 animate-spin" /> Rendering the document.
@@ -713,17 +707,19 @@ const FieldEditor = ({ token }: { token: string }) => {
                 key={pageNo}
                 data-page={pageNo}
                 onClick={(e) => onPageClick(e, pageNo, pg)}
-                className={`relative mx-auto block w-full shadow-sm ${addType ? "cursor-crosshair" : "cursor-default"}`}
-                style={{
-                  maxWidth: pg.width,
-                  aspectRatio: `${pg.width} / ${pg.height}`,
-                }}
+                className={`relative mx-auto block shadow-sm ${addType ? "cursor-crosshair" : "cursor-default"}`}
+                style={pageBoxStyle(pg, zoom)}
               >
-                <img
-                  src={pg.src}
-                  alt={`Page ${pageNo}`}
-                  className="pointer-events-none block w-full"
-                />
+                {/* the page is a placement surface here, so its text is
+                    searchable but not selectable */}
+                {pdf && (
+                  <PdfPageSurface
+                    pdf={pdf}
+                    pageNumber={pageNo}
+                    page={pg}
+                    selectableText={false}
+                  />
+                )}
                 {fields
                   .filter((f) => f.page === pageNo)
                   .map((f) => (
@@ -745,6 +741,13 @@ const FieldEditor = ({ token }: { token: string }) => {
           })
         )}
       </div>
+
+      <ViewerControls
+        containerRef={docRef}
+        pageCount={pages.length}
+        zoom={zoom}
+        onZoom={setZoom}
+      />
 
       {/* Add or edit a signer */}
       <DialogRoot
@@ -845,7 +848,7 @@ const FieldBox = ({
   onUp,
 }: {
   field: EditorField;
-  page: RenderedPage;
+  page: PdfPageInfo;
   color: string;
   selected: boolean;
   onSelect: () => void;
