@@ -71,12 +71,40 @@ export const opticalScale = (font: SignatureFont): number =>
   font === "classic" ? 1 : OPTICAL_SCALE[font];
 
 /**
+ * Point size of a mark in a box `heightPt` tall, mirroring the API's
+ * `markSize` (lib/fields/stamp.ts): large enough to fill the box, never smaller
+ * than the single-line size shorter boxes used. Keep the two in lockstep
+ */
+export const markSizePt = (heightPt: number): number =>
+  Math.max(Math.min(heightPt, 14), Math.min(heightPt * 0.75, 22));
+
+/** A handwriting face may rise at most this many box heights (API mirror) */
+const HANDWRITING_MAX_HEIGHT = 1.1;
+
+/**
  * Font size for a typed mark inside a field box, as a share of the box height
- * (CSS `cqh`), matching how the API stamps it: the classic face at the field
- * height capped at 14pt, a handwriting face scaled by its optical factor
+ * (CSS `cqh`), matching how the API stamps it: the classic face at
+ * `markSizePt`, a handwriting face scaled by its optical factor but never
+ * taller than the API allows
  */
 export const markFontSizeCqh = (
   fieldHeightPt: number,
   font: SignatureFont,
-): number =>
-  (Math.min(fieldHeightPt, 14) / fieldHeightPt) * 100 * opticalScale(font);
+): number => {
+  const classic = markSizePt(fieldHeightPt);
+  const size =
+    font === "classic"
+      ? classic
+      : Math.min(
+          classic * opticalScale(font),
+          fieldHeightPt * HANDWRITING_MAX_HEIGHT,
+        );
+  return (size / fieldHeightPt) * 100;
+};
+
+/**
+ * Font size for a date or text value inside its box, as `cqh`, mirroring the
+ * API's `textSize`: close to body copy, at most 14pt
+ */
+export const textFontSizeCqh = (fieldHeightPt: number): number =>
+  (Math.min(fieldHeightPt * 0.78, 14) / fieldHeightPt) * 100;

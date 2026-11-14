@@ -41,6 +41,7 @@ import {
   SIGNATURE_FONT_OPTIONS,
   markFontSizeCqh,
   signatureFontStyle,
+  textFontSizeCqh,
   toSignatureFont,
 } from "@/lib/signet/signatureFonts";
 
@@ -1280,14 +1281,24 @@ const FieldOverlay = ({
   }
 
   if (field.type === "date") {
+    // the date signed: filled in by Signet when the signer finishes, never
+    // typed, so it previews exactly as it will be stamped (left on the line,
+    // body-copy size, shrunk to fit the box)
     return (
-      <div style={style} className={`overflow-hidden rounded border-2 ${ring}`}>
-        <input
-          data-fid={field.id}
-          value={textValue || formatDate(today, field.dateFormat)}
-          onChange={(e) => onText(e.target.value)}
-          style={{ color: field.color || DEFAULT_INK }}
-          className="size-full border-0 bg-transparent px-1 text-center font-semibold text-slate-800 italic"
+      <div
+        data-fid={field.id}
+        title="Date signed, filled in automatically"
+        style={{ ...style, containerType: "size", paddingInline: "2cqh" }}
+        className={`flex items-end overflow-hidden rounded border-2 ${ring}`}
+      >
+        <FitText
+          text={formatDate(today, field.dateFormat)}
+          fieldHeightPt={field.height}
+          style={{
+            fontSize: `${textFontSizeCqh(field.height)}cqh`,
+            color: field.color || DEFAULT_INK,
+          }}
+          className="font-sans"
         />
       </div>
     );
@@ -1295,14 +1306,21 @@ const FieldOverlay = ({
 
   if (field.type === "text") {
     return (
-      <div style={style} className={`overflow-hidden rounded border-2 ${ring}`}>
+      <div
+        style={{ ...style, containerType: "size" }}
+        className={`overflow-hidden rounded border-2 ${ring}`}
+      >
         <input
           data-fid={field.id}
           value={textValue}
           onChange={(e) => onText(e.target.value)}
           placeholder="Text"
-          style={{ color: field.color || DEFAULT_INK }}
-          className="size-full border-0 bg-transparent px-1 text-slate-800"
+          style={{
+            color: field.color || DEFAULT_INK,
+            // sized to the box like the stamp, so a short box never clips
+            fontSize: `${textFontSizeCqh(field.height)}cqh`,
+          }}
+          className="size-full border-0 bg-transparent px-1 py-0 leading-none"
         />
       </div>
     );
@@ -1321,12 +1339,19 @@ const FieldOverlay = ({
         ...base,
         // the mark inside sizes itself in container query units of this box
         containerType: "size",
+        paddingInline: filled ? "2cqh" : undefined,
         borderColor: color,
         // stays tinted once filled so the signer can always see where they sign
         background: filled ? tint : `${color}40`,
       }}
       data-fid={field.id}
-      className={`flex cursor-pointer items-center justify-center overflow-hidden rounded border-2 ${ring}`}
+      // a filled mark sits on the line at the left, where the stamp draws it,
+      // and a handwriting flourish may rise past the box as on the signed PDF
+      className={`flex cursor-pointer rounded border-2 ${
+        filled
+          ? "items-end justify-start overflow-visible"
+          : "items-center justify-center overflow-hidden"
+      } ${ring}`}
     >
       {image ? (
         <img src={image} alt="signature" className="max-h-full max-w-full" />
@@ -1355,6 +1380,9 @@ const FieldOverlay = ({
  * tracks the page as it scales) with the style's optical factor, then shrunk to
  * fit the box width when the name is too long, like the stamp's width fit
  */
+/** The stamp draws text with its baseline this far above the field bottom */
+const STAMP_BASELINE_PT = 2;
+
 const SignatureMark = ({
   text,
   font,
@@ -1367,40 +1395,89 @@ const SignatureMark = ({
   /** the sender's chosen ink, as on the signed PDF; default ink when unset */
   ink?: string | null;
 }) => {
-  const ref = useRef<HTMLSpanElement>(null);
-  const [fit, setFit] = useState(1);
-  useLayoutEffect(() => {
-    const el = ref.current;
-    const box = el?.parentElement;
-    if (!el || !box) return;
-    const measure = () => {
-      const natural = el.scrollWidth;
-      const room = box.clientWidth;
-      setFit(natural > room && natural > 0 ? room / natural : 1);
-    };
-    measure();
-    // re-measure when the box resizes (the page scales) or the mark does (new
-    // text or face); the scale transform does not change layout size, so this
-    // cannot feed back into itself
-    const observer = new ResizeObserver(measure);
-    observer.observe(box);
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
   const { fontSize: _previewSize, ...face } = signatureFontStyle(font);
   return (
-    <span
-      ref={ref}
-      className="whitespace-nowrap font-semibold text-slate-800 leading-none"
+    <FitText
+      text={text}
+      fieldHeightPt={fieldHeightPt}
+      className="font-semibold"
       style={{
         ...face,
         fontSize: `${markFontSizeCqh(fieldHeightPt, font)}cqh`,
         color: ink || DEFAULT_INK,
-        transform: fit < 1 ? `scale(${fit})` : undefined,
+      }}
+    />
+  );
+};
+
+/**
+ * One line of text inside a field box, drawn the way the stamp draws it: sized
+ * in container query units of the box (so it tracks the page as it scales),
+ * shrunk to fit the box width when too long, and with its baseline `baselinePt`
+ * points above the box bottom (the stamp's baseline). The baseline is measured
+ * from a probe rather than assumed, since every face carries its own ascent and
+ * descent
+ */
+const FitText = ({
+  text,
+  style,
+  fieldHeightPt,
+  baselinePt = STAMP_BASELINE_PT,
+  className = "",
+}: {
+  text: string;
+  style: React.CSSProperties;
+  fieldHeightPt: number;
+  baselinePt?: number;
+  className?: string;
+}) => {
+  const ref = useRef<HTMLSpanElement>(null);
+  const probeRef = useRef<HTMLSpanElement>(null);
+  const [place, setPlace] = useState({ fit: 1, shift: 0 });
+  useLayoutEffect(() => {
+    const el = ref.current;
+    const probe = probeRef.current;
+    const box = el?.parentElement;
+    if (!el || !probe || !box) return;
+    const measure = () => {
+      const cs = getComputedStyle(box);
+      const pad =
+        Number.parseFloat(cs.paddingLeft) + Number.parseFloat(cs.paddingRight);
+      const room = box.clientWidth - (Number.isFinite(pad) ? pad : 0);
+      const natural = el.scrollWidth;
+      const fit = natural > room && natural > 0 ? room / natural : 1;
+      // the probe sits on the baseline; scaling from the bottom shrinks its
+      // distance from the bottom by the same factor
+      const baselineFromBottom = el.offsetHeight - probe.offsetTop;
+      const want = (box.clientHeight * baselinePt) / fieldHeightPt;
+      setPlace({ fit, shift: fit * baselineFromBottom - want });
+    };
+    measure();
+    // re-measure when the box resizes (the page scales) or the text does (new
+    // text or face); transforms do not change layout size, so this cannot feed
+    // back into itself
+    const observer = new ResizeObserver(measure);
+    observer.observe(box);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [baselinePt, fieldHeightPt]);
+
+  return (
+    <span
+      ref={ref}
+      className={`relative whitespace-nowrap leading-none ${className}`}
+      style={{
+        ...style,
+        transform: `translateY(${place.shift}px) scale(${place.fit})`,
+        transformOrigin: "left bottom",
       }}
     >
       {text}
+      <span
+        ref={probeRef}
+        aria-hidden
+        className="inline-block h-0 w-0 align-baseline"
+      />
     </span>
   );
 };
