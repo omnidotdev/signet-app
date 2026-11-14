@@ -6,6 +6,7 @@ import {
   SIGNATURE_FONT_OPTIONS,
   markFontSizeCqh,
   signatureFontStyle,
+  textFontSizeCqh,
   toSignatureFont,
 } from "./signatureFonts";
 
@@ -54,8 +55,17 @@ describe("signature font styles", () => {
   test("a mark is sized to its field the way the PDF stamps it", () => {
     // a 12pt field draws classic at the full field height
     expect(markFontSizeCqh(12, "classic")).toBeCloseTo(100, 5);
-    // a 28pt field caps classic at 14pt, half the height
-    expect(markFontSizeCqh(28, "classic")).toBeCloseTo(50, 5);
-    expect(markFontSizeCqh(12, "dafoe")).toBeCloseTo(167.1, 5);
+    // a taller field fills three quarters of its height, up to 22pt
+    expect(markFontSizeCqh(28, "classic")).toBeCloseTo(75, 5);
+    expect(markFontSizeCqh(44, "classic")).toBeCloseTo(50, 5);
+    // a handwriting face scales optically but never rises past 1.1 boxes
+    expect(markFontSizeCqh(12, "dafoe")).toBeCloseTo(110, 5);
+    expect(markFontSizeCqh(40, "homemade")).toBeCloseTo(55 * 0.893, 5);
+  });
+
+  test("a date reads at body-copy size in its box", () => {
+    expect(textFontSizeCqh(14.3)).toBeCloseTo(78, 5);
+    // at most 14pt in a tall box
+    expect(textFontSizeCqh(28)).toBeCloseTo(50, 5);
   });
 });
