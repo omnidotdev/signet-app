@@ -1,5 +1,5 @@
 import { Button } from "@omnidotdev/thornberry/button";
-import { useRouteContext } from "@tanstack/react-router";
+import { useNavigate, useRouteContext } from "@tanstack/react-router";
 import { FileSignature, Plus, Stamp, UploadCloud, X } from "lucide-react";
 import { useRef, useState } from "react";
 
@@ -44,6 +44,7 @@ const emptySigner = (): SignerInput => ({
 const UploadCard = ({ onSent }: Props) => {
   const { auth } = useRouteContext({ strict: false });
   const me = auth?.user;
+  const navigate = useNavigate();
 
   const [file, setFile] = useState<File | null>(null);
   const [docName, setDocName] = useState("");
@@ -56,7 +57,6 @@ const UploadCard = ({ onSent }: Props) => {
   const [requireVerification, setRequireVerification] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [savingDraft, setSavingDraft] = useState(false);
   const [result, setResult] = useState<SentResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -155,9 +155,59 @@ const UploadCard = ({ onSent }: Props) => {
     }
   };
 
+  /**
+   * The signed-in flow: save the upload as a draft and open it in the editor,
+   * where the sender sees the document with each signer's fields in place,
+   * adjusts them, and only then sends (or signs, when signing it themself).
+   * Nothing is emailed until they press Send there
+   */
+  const review = async (forSelf: boolean) => {
+    if (!file || !me) return;
+    const parties = forSelf
+      ? [{ name: (selfName || me.name || "").trim(), email: me.email }]
+      : namedSigners.map((s) => ({
+          name: s.name.trim(),
+          email: s.email.trim() || undefined,
+          accessCode:
+            requireCode && s.accessCode.trim()
+              ? s.accessCode.trim()
+              : undefined,
+        }));
+    if (parties.length === 0 || !parties[0]?.name) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const fd = new FormData();
+      fd.set("file", file);
+      fd.set("name", docName || file.name);
+      fd.set("signers", JSON.stringify(parties));
+      if (!forSelf && sequential && parties.length > 1)
+        fd.set("signingMode", "sequential");
+      if (!forSelf && requireVerification)
+        fd.set("verificationLevel", "email_otp");
+      fd.set("draft", "true");
+      const res = await fetch("/api/signet/documents", {
+        method: "POST",
+        body: fd,
+      });
+      if (res.status === 415) throw new Error("unsupported");
+      const body = (await res.json().catch(() => ({}))) as { id?: string };
+      if (!res.ok || !body.id) throw new Error();
+      onSent?.();
+      navigate({ to: "/documents/$id/edit", params: { id: body.id } });
+    } catch (e) {
+      setError(
+        e instanceof Error && e.message === "unsupported"
+          ? `That file type isn't supported. ${UNSUPPORTED_UPLOAD_MSG}`
+          : "Could not open the document. Please try again.",
+      );
+      setBusy(false);
+    }
+  };
+
   const submit = async (draft: boolean) => {
     if (!file || namedSigners.length === 0 || verificationNeedsEmail) return;
-    draft ? setSavingDraft(true) : setBusy(true);
+    setBusy(true);
     setError(null);
     try {
       const fd = new FormData();
@@ -198,7 +248,6 @@ const UploadCard = ({ onSent }: Props) => {
       );
     } finally {
       setBusy(false);
-      setSavingDraft(false);
     }
   };
 
@@ -399,50 +448,57 @@ const UploadCard = ({ onSent }: Props) => {
                 onChange={(e) => setSelfName(e.target.value)}
                 placeholder="Your name"
               />
-              <label className="mt-3 flex items-start gap-2 text-muted-foreground text-sm">
-                <input
-                  type="checkbox"
-                  className="mt-0.5"
-                  checked={selfConsent}
-                  onChange={(e) => setSelfConsent(e.target.checked)}
-                />
-                I agree to sign this document electronically and that my
-                electronic signature is legally binding (ESIGN / UETA).
-              </label>
+              {!me && (
+                <label className="mt-3 flex items-start gap-2 text-muted-foreground text-sm">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5"
+                    checked={selfConsent}
+                    onChange={(e) => setSelfConsent(e.target.checked)}
+                  />
+                  I agree to sign this document electronically and that my
+                  electronic signature is legally binding (ESIGN / UETA).
+                </label>
+              )}
             </Field>
           )}
 
           {error && <p className="text-destructive text-sm">{error}</p>}
 
           <div className="flex flex-col gap-2 sm:flex-row">
+            {/* signed in, every path goes through the document first: see and
+                adjust where each person signs, then send or sign. The
+                anonymous quick paths (no account to own a draft) stay direct */}
             <Button
               className="w-full min-w-0 sm:flex-1"
               disabled={
                 busy ||
-                savingDraft ||
                 (mode === "send"
                   ? namedSigners.length === 0 || verificationNeedsEmail
-                  : !selfName.trim() || !selfConsent)
+                  : me
+                    ? !(selfName.trim() || me.name?.trim())
+                    : !selfName.trim() || !selfConsent)
               }
-              onClick={mode === "send" ? () => submit(false) : signMyself}
+              onClick={
+                mode === "send"
+                  ? me
+                    ? () => review(false)
+                    : () => submit(false)
+                  : me
+                    ? () => review(true)
+                    : signMyself
+              }
             >
               {busy
                 ? "Working..."
                 : mode === "send"
-                  ? "Send for signature"
-                  : "Sign and download"}
+                  ? me
+                    ? "Next: review and send"
+                    : "Send for signature"
+                  : me
+                    ? "Next: place your signature"
+                    : "Sign and download"}
             </Button>
-            {/* drafts are owner-scoped, so only offer them when signed in */}
-            {mode === "send" && me && (
-              <Button
-                variant="outline"
-                className="w-full shrink-0 sm:w-auto"
-                disabled={busy || savingDraft || namedSigners.length === 0}
-                onClick={() => submit(true)}
-              >
-                {savingDraft ? "Saving..." : "Save as draft"}
-              </Button>
-            )}
           </div>
         </div>
       )}
