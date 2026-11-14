@@ -30,6 +30,7 @@ import {
   DialogRoot,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { eventLabel } from "@/lib/signet/eventLabel";
 import { canCorrectSigner } from "@/lib/signet/signerCorrection";
 import createMetaTags from "@/lib/util/createMetaTags";
 
@@ -83,19 +84,6 @@ const prettyDateTime = (iso: string) =>
     dateStyle: "medium",
     timeStyle: "short",
   });
-
-const EVENT_LABEL: Record<string, string> = {
-  "document.created": "Created",
-  "document.sent": "Sent for signature",
-  "document.viewed": "Opened",
-  "signature.completed": "Signed",
-  "document.completed": "Completed and sealed",
-  "document.declined": "Declined",
-  "document.voided": "Voided",
-  "signer.corrected": "Signer updated",
-};
-const labelFor = (type: string) =>
-  EVENT_LABEL[type] ?? type.replace(/^[a-z]+\./, "").replace(/[._]/g, " ");
 
 function DocumentDetailPage() {
   const { id } = Route.useParams();
@@ -504,7 +492,7 @@ function DocumentDetailPage() {
                 <EventIcon type={e.type} />
                 <div className="min-w-0">
                   <p className="font-medium text-sm">
-                    {labelFor(e.type)}
+                    {eventLabel(e.type)}
                     {e.signer ? (
                       <span className="text-muted-foreground">
                         {" "}
@@ -691,7 +679,7 @@ function DocumentDetailPage() {
 const EventIcon = ({ type }: { type: string }) => {
   const cls = "mt-0.5 size-4 shrink-0 text-muted-foreground";
   if (type === "document.viewed") return <Eye className={cls} />;
-  if (type === "signature.completed")
+  if (type === "document.signed" || type === "signature.completed")
     return <CircleCheck className="mt-0.5 size-4 shrink-0 text-primary" />;
   if (type === "document.completed")
     return <ShieldCheck className="mt-0.5 size-4 shrink-0 text-primary" />;
