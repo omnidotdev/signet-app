@@ -1,5 +1,13 @@
 # @omnidotdev/signet-app
 
+## 0.7.1
+
+### Patch Changes
+
+- [#83](https://github.com/omnidotdev/signet-app/pull/83) [`29fbf52`](https://github.com/omnidotdev/signet-app/commit/29fbf525e64b82a778aee12d3b26e02731e2fc16) Thanks [@coopbri](https://github.com/coopbri)! - A document signed for yourself downloads under the document's name, matching the other downloads
+
+- [#81](https://github.com/omnidotdev/signet-app/pull/81) [`9b8234e`](https://github.com/omnidotdev/signet-app/commit/9b8234e48b26e685c1b2ae4c69d3ecd94df7798d) Thanks [@coopbri](https://github.com/coopbri)! - Document activity now shows every event in sentence case ("Signed", "Identity verified", "Signer added") with the signed check icon, instead of raw lowercase event names
+
 ## 0.7.0
 
 ### Minor Changes
