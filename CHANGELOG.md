@@ -1,5 +1,11 @@
 # @omnidotdev/signet-app
 
+## 0.6.1
+
+### Patch Changes
+
+- [#71](https://github.com/omnidotdev/signet-app/pull/71) [`cce5843`](https://github.com/omnidotdev/signet-app/commit/cce5843695fcf99b9e9ae8b525ea5d1bafe145a0) Thanks [@coopbri](https://github.com/coopbri)! - Signing page: the "go to" guide hides while its field is on screen, signing spots stay tinted in the signer's color once filled, typed signatures and dates preview in the ink they are stamped in, and the toolbar only mentions automatic dates when the document has date fields
+
 ## 0.6.0
 
 ### Minor Changes
