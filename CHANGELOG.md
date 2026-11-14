@@ -1,5 +1,15 @@
 # @omnidotdev/signet-app
 
+## 0.7.0
+
+### Minor Changes
+
+- [#75](https://github.com/omnidotdev/signet-app/pull/75) [`4dabe29`](https://github.com/omnidotdev/signet-app/commit/4dabe294d2055aa9cde14f62ece164dbf6081917) Thanks [@coopbri](https://github.com/coopbri)! - Review before sending: a signed-in upload opens in the field editor with each signer's fields in place, and nothing is emailed until Send (signing it yourself opens it to place your signature, then sign). Documents now read like a PDF reader: a wider layout with the signing controls beside the document, sharp pages that render as you scroll, text you can find with Ctrl/Cmd+F and select, and zoom with a page counter
+
+### Patch Changes
+
+- [#73](https://github.com/omnidotdev/signet-app/pull/73) [`70530ac`](https://github.com/omnidotdev/signet-app/commit/70530acc3260f1c7cff7c648d8f7098051950d42) Thanks [@coopbri](https://github.com/coopbri)! - Signing page previews match the signed PDF: a typed signature sits on the signing line at full size (handwriting flourishes are no longer clipped), and the date is a read-only "date signed" in body-text size that always fits its box
+
 ## 0.6.1
 
 ### Patch Changes
