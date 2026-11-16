@@ -1,5 +1,23 @@
 # @omnidotdev/signet-app
 
+## 0.8.0
+
+### Minor Changes
+
+- [#86](https://github.com/omnidotdev/signet-app/pull/86) [`28898aa`](https://github.com/omnidotdev/signet-app/commit/28898aa5faa016622a2eab5a5c93c266ee126484) Thanks [@coopbri](https://github.com/coopbri)! - Sending a document now asks for an optional note to signers and how long the request stays open (120 days by default). Signers see the note and the deadline, an expired or canceled link says so up front, and a signer waiting on others is told the final copy comes by email instead of being offered a download that is not ready yet. Documents show when they expire and an "Expired" status
+
+### Patch Changes
+
+- [#83](https://github.com/omnidotdev/signet-app/pull/83) [`29fbf52`](https://github.com/omnidotdev/signet-app/commit/29fbf525e64b82a778aee12d3b26e02731e2fc16) Thanks [@coopbri](https://github.com/coopbri)! - A document signed for yourself downloads under the document's name, matching the other downloads
+
+- [#81](https://github.com/omnidotdev/signet-app/pull/81) [`9b8234e`](https://github.com/omnidotdev/signet-app/commit/9b8234e48b26e685c1b2ae4c69d3ecd94df7798d) Thanks [@coopbri](https://github.com/coopbri)! - Document activity now shows every event in sentence case ("Signed", "Identity verified", "Signer added") with the signed check icon, instead of raw lowercase event names
+
+- [#84](https://github.com/omnidotdev/signet-app/pull/84) [`0f3e2f8`](https://github.com/omnidotdev/signet-app/commit/0f3e2f83bc0a82da09f34530993dde97e74c31c7) Thanks [@coopbri](https://github.com/coopbri)! - Buy and manage plans on the Omni account hub. A paid plan on the pricing page now opens the hub's confirm step for that plan and workspace, and Manage subscription on a workspace's billing page opens plan management on the hub; both come back to Signet. The in-app checkout, billing portal, and cancel and renew actions are removed.
+
+- [#85](https://github.com/omnidotdev/signet-app/pull/85) [`316ec8e`](https://github.com/omnidotdev/signet-app/commit/316ec8e417a68d9ea3a371c32879e0fb551a4121) Thanks [@coopbri](https://github.com/coopbri)! - The profile page loads again. It failed while looking up a plan for the signed-in user, but plans belong to workspaces, so the profile now lists your workspaces with a link to each one's billing. Workspace pages also read their workspace correctly when opened directly.
+
+  A workspace's billing page no longer offers an upgrade while there are no paid plans to upgrade to.
+
 ## 0.7.0
 
 ### Minor Changes
