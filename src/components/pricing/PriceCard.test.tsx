@@ -1,15 +1,11 @@
-import { describe, expect, mock, spyOn, test } from "bun:test";
+import { describe, expect, mock, test } from "bun:test";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import * as TanStackRouter from "@tanstack/react-router";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, screen } from "@testing-library/react";
+
+import renderWithRouter from "@/test/renderWithRouter";
 
 import type { Price } from "./PriceCard";
-
-// Spy on router hooks for this test file
-spyOn(TanStackRouter, "useRouteContext").mockReturnValue({ auth: null });
-spyOn(TanStackRouter, "useNavigate").mockReturnValue(mock());
-spyOn(TanStackRouter, "useSearch").mockReturnValue({});
 
 // Mock auth client
 mock.module("@/lib/auth/authClient", () => ({
@@ -55,56 +51,57 @@ const renderPriceCard = (price: Price) => {
     defaultOptions: { queries: { retry: false } },
   });
 
-  return render(
+  return renderWithRouter(
     <QueryClientProvider client={queryClient}>
       <PriceCard price={price} />
     </QueryClientProvider>,
+    { context: { auth: null } },
   );
 };
 
 describe("PriceCard", () => {
-  test("renders the tier name", () => {
-    renderPriceCard(mockPrice);
+  test("renders the tier name", async () => {
+    await renderPriceCard(mockPrice);
 
     // The tier name renders in more than one place (card title and the
     // create-workspace dialog), so assert presence rather than uniqueness
     expect(screen.getAllByText("Pro").length).toBeGreaterThan(0);
   });
 
-  test("renders product description", () => {
-    renderPriceCard(mockPrice);
+  test("renders product description", async () => {
+    await renderPriceCard(mockPrice);
 
     expect(screen.getByText("Perfect for growing teams")).toBeDefined();
   });
 
-  test("renders recurring interval", () => {
-    renderPriceCard(mockPrice);
+  test("renders recurring interval", async () => {
+    await renderPriceCard(mockPrice);
 
     expect(screen.getByText("/month")).toBeDefined();
   });
 
-  test("renders marketing features", () => {
-    renderPriceCard(mockPrice);
+  test("renders marketing features", async () => {
+    await renderPriceCard(mockPrice);
 
     expect(screen.getByText("Unlimited projects")).toBeDefined();
     expect(screen.getByText("Priority support")).toBeDefined();
     expect(screen.getByText("Advanced analytics")).toBeDefined();
   });
 
-  test("renders the subscribe button for a paid tier", () => {
-    renderPriceCard(mockPrice);
+  test("renders the subscribe button for a paid tier", async () => {
+    await renderPriceCard(mockPrice);
 
     const button = screen.getByRole("button", { name: "Continue with Pro" });
     expect(button).toBeDefined();
   });
 
-  test("omits the interval suffix for a one-time (non-recurring) price", () => {
+  test("omits the interval suffix for a one-time (non-recurring) price", async () => {
     const oneTimePrice: Price = {
       ...mockPrice,
       recurring: null,
     };
 
-    renderPriceCard(oneTimePrice);
+    await renderPriceCard(oneTimePrice);
 
     // No `/interval` suffix is rendered when the price is not recurring
     expect(screen.queryByText("/month")).toBeNull();

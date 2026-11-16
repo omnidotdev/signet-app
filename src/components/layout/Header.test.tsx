@@ -1,17 +1,9 @@
-import { describe, expect, mock, spyOn, test } from "bun:test";
+import { describe, expect, mock, test } from "bun:test";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import * as TanStackRouter from "@tanstack/react-router";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, screen } from "@testing-library/react";
 
-// Spy on router hooks
-spyOn(TanStackRouter, "useRouteContext").mockReturnValue({ auth: null });
-spyOn(TanStackRouter, "useRouter").mockReturnValue({
-  invalidate: mock(),
-} as unknown as ReturnType<typeof TanStackRouter.useRouter>);
-spyOn(TanStackRouter, "useLocation").mockReturnValue({
-  pathname: "/",
-} as unknown as ReturnType<typeof TanStackRouter.useLocation>);
+import renderWithRouter from "@/test/renderWithRouter";
 
 // Mock auth client before importing Header
 const mockSignIn = mock(() => Promise.resolve());
@@ -34,22 +26,6 @@ mock.module("@/providers/ThemeProvider", () => ({
   }),
 }));
 
-// Mock InternalLink to avoid router dependency
-mock.module("@/components/core/InternalLink", () => ({
-  default: ({
-    children,
-    to,
-    ...props
-  }: {
-    children: React.ReactNode;
-    to: string;
-  }) => (
-    <a href={to} {...props}>
-      {children}
-    </a>
-  ),
-}));
-
 // Import after mocking
 const { default: Header } = await import("./Header");
 
@@ -60,43 +36,41 @@ const renderHeader = (
 ) => {
   cleanup();
 
-  // Update the mock for this render
-  spyOn(TanStackRouter, "useRouteContext").mockReturnValue({ auth });
-
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
 
-  return render(
+  return renderWithRouter(
     <QueryClientProvider client={queryClient}>
       <Header />
     </QueryClientProvider>,
+    { context: { auth } },
   );
 };
 
 describe("Header", () => {
-  test("renders header element", () => {
-    renderHeader();
+  test("renders header element", async () => {
+    await renderHeader();
 
     const header = screen.getByRole("banner");
     expect(header).toBeDefined();
   });
 
-  test("renders pricing link", () => {
-    renderHeader();
+  test("renders pricing link", async () => {
+    await renderHeader();
 
     const pricingLink = screen.getByRole("link", { name: "Pricing" });
     expect(pricingLink).toBeDefined();
   });
 
-  test("shows Sign In button when unauthenticated", () => {
-    renderHeader(null);
+  test("shows Sign In button when unauthenticated", async () => {
+    await renderHeader(null);
 
     const signInButton = screen.getByRole("button", { name: "Sign In" });
     expect(signInButton).toBeDefined();
   });
 
-  test("shows user avatar when authenticated", () => {
+  test("shows user avatar when authenticated", async () => {
     const auth = {
       user: {
         id: "user-1",
@@ -106,13 +80,13 @@ describe("Header", () => {
       },
     };
 
-    renderHeader(auth);
+    await renderHeader(auth);
 
     // Should show the first letter of the user's name as fallback
     expect(screen.getByText("T")).toBeDefined();
   });
 
-  test("does not show Sign In button when authenticated", () => {
+  test("does not show Sign In button when authenticated", async () => {
     const auth = {
       user: {
         id: "user-1",
@@ -122,7 +96,7 @@ describe("Header", () => {
       },
     };
 
-    renderHeader(auth);
+    await renderHeader(auth);
 
     const signInButton = screen.queryByRole("button", { name: "Sign In" });
     expect(signInButton).toBeNull();
