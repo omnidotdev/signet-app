@@ -19,7 +19,6 @@ interface SignerInput {
 
 interface SentResult {
   draft?: boolean;
-  manageUrl: string;
   signers: { name: string; signUrl: string }[];
 }
 
@@ -536,14 +535,6 @@ const UploadCard = ({ onSent }: Props) => {
             </>
           )}
           <div className="mt-3 flex items-center gap-4">
-            {!result.draft && (
-              <a
-                href={result.manageUrl}
-                className="text-primary text-sm underline-offset-4 hover:underline"
-              >
-                Track status
-              </a>
-            )}
             <button
               type="button"
               onClick={reset}
