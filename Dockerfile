@@ -39,4 +39,5 @@ ENV BUILD_SHA=${GIT_SHA}
 COPY --from=builder /app/.output ./.output
 
 EXPOSE 3000
-CMD ["node", ".output/server/index.mjs"]
+# Raise the max request-header size so large many-workspace auth cookies do not trip HTTP 431
+CMD ["node", "--max-http-header-size=65536", ".output/server/index.mjs"]
