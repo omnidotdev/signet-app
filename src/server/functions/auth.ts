@@ -1,8 +1,4 @@
-import {
-  OMNI_CLAIMS_NAMESPACE,
-  ensureFreshAccessToken,
-  isInvalidGrant,
-} from "@omnidotdev/providers";
+import { ensureFreshAccessToken, isInvalidGrant } from "@omnidotdev/providers";
 import { redirect } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest, getRequestHeaders } from "@tanstack/react-start/server";
@@ -15,6 +11,7 @@ import {
   AUTH_CLIENT_ID,
   BASE_URL,
 } from "@/lib/config/env.config";
+import { resolveOrganizationClaims } from "@/server/organizationClaims";
 
 import type { OrganizationClaim } from "@omnidotdev/providers/auth";
 
@@ -161,12 +158,10 @@ export const getUserOrganizations = createServerFn().handler(
 
       if (!tokenResult?.idToken) return [];
 
-      const payload = decodeJwt(tokenResult.idToken);
-      const claims = payload[OMNI_CLAIMS_NAMESPACE];
-
-      if (!Array.isArray(claims)) return [];
-
-      return claims as OrganizationClaim[];
+      return await resolveOrganizationClaims(
+        decodeJwt(tokenResult.idToken),
+        tokenResult.accessToken,
+      );
     } catch {
       return [];
     }
