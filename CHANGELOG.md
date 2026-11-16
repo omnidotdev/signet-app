@@ -1,5 +1,11 @@
 # @omnidotdev/signet-app
 
+## 0.8.1
+
+### Patch Changes
+
+- [#87](https://github.com/omnidotdev/signet-app/pull/87) [`da6d649`](https://github.com/omnidotdev/signet-app/commit/da6d6490ceaef5a43a30e43e08163b4f65e89023) Thanks [@coopbri](https://github.com/coopbri)! - Sending without an account no longer shows a "Track status" link, which carried a private token in its address
+
 ## 0.8.0
 
 ### Minor Changes
