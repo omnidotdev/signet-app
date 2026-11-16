@@ -20,13 +20,6 @@ mock.module("@/lib/auth/authClient", () => ({
   },
 }));
 
-// Mock server function (PriceCard imports `createCheckoutWithWorkspace`)
-mock.module("@/server/functions/subscriptions", () => ({
-  createCheckoutWithWorkspace: mock(() =>
-    Promise.resolve({ checkoutUrl: "https://checkout.stripe.com" }),
-  ),
-}));
-
 // Import after mocking
 const { default: PriceCard } = await import("./PriceCard");
 

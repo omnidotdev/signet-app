@@ -1,10 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import {
-  CancelSubscription,
-  ManageSubscription,
-  RenewSubscription,
-} from "@/components/profile";
 import ApiKeysSection from "@/components/signet/ApiKeysSection";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { fetchSession } from "@/server/functions/auth";
@@ -19,33 +14,18 @@ const formatDate = (timestamp: number) =>
   new Date(timestamp * 1000).toLocaleDateString();
 
 /**
- * Subscription card component.
+ * Subscription card component. Changing, canceling, or renewing the plan
+ * happens on the Omni account hub, reached from a workspace's billing page
  */
-const SubscriptionCard = ({
-  subscription,
-  entityType,
-  entityId,
-}: {
-  subscription: Subscription;
-  entityType: string;
-  entityId: string;
-}) => {
+const SubscriptionCard = ({ subscription }: { subscription: Subscription }) => {
   const isPendingCancellation = subscription.cancelAt !== null;
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader>
         <CardTitle className="text-lg">
           {subscription.product?.name ?? "Subscription"}
         </CardTitle>
-        <div className="flex gap-1">
-          <ManageSubscription entityType={entityType} entityId={entityId} />
-          {isPendingCancellation ? (
-            <RenewSubscription entityType={entityType} entityId={entityId} />
-          ) : (
-            <CancelSubscription entityType={entityType} entityId={entityId} />
-          )}
-        </div>
       </CardHeader>
       <CardContent>
         <dl className="grid grid-cols-2 gap-2 text-sm">
@@ -74,7 +54,7 @@ const SubscriptionCard = ({
  */
 const ProfilePage = () => {
   const { auth } = Route.useRouteContext();
-  const { subscription, entityType, entityId } = Route.useLoaderData();
+  const { subscription } = Route.useLoaderData();
 
   return (
     <div className="mx-auto flex h-full max-w-7xl flex-col text-pretty px-4 py-8 text-center sm:text-start">
@@ -95,11 +75,7 @@ const ProfilePage = () => {
 
         <div className="mt-6">
           {subscription ? (
-            <SubscriptionCard
-              subscription={subscription}
-              entityType={entityType}
-              entityId={entityId}
-            />
+            <SubscriptionCard subscription={subscription} />
           ) : (
             <p className="text-muted-foreground">No active subscription.</p>
           )}

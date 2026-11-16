@@ -11,8 +11,6 @@ export const {
   AUTH_CLIENT_SECRET,
   // billing
   VITE_BILLING_BASE_URL: BILLING_BASE_URL,
-  // payment processing
-  VITE_STRIPE_PORTAL_CONFIG_ID: STRIPE_PORTAL_CONFIG_ID,
   // authorization
   VITE_AUTHZ_API_URL: AUTHZ_API_URL,
   VITE_AUTHZ_ENABLED: AUTHZ_ENABLED,
@@ -27,8 +25,6 @@ export const API_GRAPHQL_URL = `${API_BASE_URL}/graphql`;
 // Startup warnings for optional integrations
 if (!BILLING_BASE_URL)
   console.warn("BILLING_BASE_URL not set, billing disabled");
-if (!STRIPE_PORTAL_CONFIG_ID)
-  console.warn("STRIPE_PORTAL_CONFIG_ID not set, Stripe portal disabled");
 if (!AUTHZ_API_URL)
   console.warn("AUTHZ_API_URL not set, authorization disabled");
 if (!AUTHZ_ENABLED)
