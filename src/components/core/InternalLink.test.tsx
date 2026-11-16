@@ -1,41 +1,32 @@
-import { describe, expect, mock, test } from "bun:test";
+import { describe, expect, test } from "bun:test";
 
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 
-// Mock createLink to pass through props with `to` converted to `href`
-mock.module("@tanstack/react-router", () => ({
-  // biome-ignore lint/suspicious/noExplicitAny: mock type flexibility
-  createLink: (Component: any) => (props: any) => {
-    const { to, ...rest } = props;
-    return <Component href={to} {...rest} />;
-  },
-}));
-
-// Import after mock
-const { default: InternalLink } = await import("./InternalLink");
+import renderWithRouter from "@/test/renderWithRouter";
+import InternalLink from "./InternalLink";
 
 describe("InternalLink", () => {
-  test("renders as a link element", () => {
-    render(<InternalLink to="/">Home</InternalLink>);
+  test("renders as a link element", async () => {
+    await renderWithRouter(<InternalLink to="/">Home</InternalLink>);
 
-    const link = screen.getByRole("link", { name: "Home" });
-    expect(link).toBeDefined();
+    const link = await screen.findByRole("link", { name: "Home" });
+    expect(link.getAttribute("href")).toBe("/");
   });
 
-  test("renders children content", () => {
-    render(<InternalLink to="/pricing">About Us</InternalLink>);
+  test("renders children content", async () => {
+    await renderWithRouter(<InternalLink to="/pricing">About Us</InternalLink>);
 
-    expect(screen.getByText("About Us")).toBeDefined();
+    expect(await screen.findByText("About Us")).toBeDefined();
   });
 
-  test("applies custom className", () => {
-    render(
+  test("applies custom className", async () => {
+    await renderWithRouter(
       <InternalLink to="/" className="custom-test-class">
         Custom Class
       </InternalLink>,
     );
 
-    const link = screen.getByRole("link");
-    expect(link.hasAttribute("class")).toBe(true);
+    const link = await screen.findByRole("link");
+    expect(link.classList.contains("custom-test-class")).toBe(true);
   });
 });
