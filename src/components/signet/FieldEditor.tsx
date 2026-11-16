@@ -27,6 +27,11 @@ import {
 import { DATE_FORMAT_OPTIONS } from "@/lib/signet/dateFormat";
 import { DEFAULT_INK } from "@/lib/signet/ink";
 import {
+  DEFAULT_EXPIRY_DAYS,
+  EXPIRY_OPTIONS,
+  MESSAGE_MAX_LENGTH,
+} from "@/lib/signet/sendOptions";
+import {
   PdfPageSurface,
   ViewerControls,
   pageBoxStyle,
@@ -143,6 +148,10 @@ const FieldEditor = ({ token }: { token: string }) => {
   const [selected, setSelected] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [sending, setSending] = useState(false);
+  // the send step: an optional note to signers and how long the request stays open
+  const [sendOpen, setSendOpen] = useState(false);
+  const [note, setNote] = useState("");
+  const [expiryDays, setExpiryDays] = useState(DEFAULT_EXPIRY_DAYS);
 
   const dragRef = useRef<{
     key: string;
@@ -444,6 +453,11 @@ const FieldEditor = ({ token }: { token: string }) => {
       await persist();
       const res = await fetch(`/api/signet/documents/${token}/send`, {
         method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          message: note.trim() || undefined,
+          expiresInDays: Number(expiryDays),
+        }),
       });
       const body = (await res.json().catch(() => ({}))) as {
         signNow?: boolean;
@@ -460,6 +474,7 @@ const FieldEditor = ({ token }: { token: string }) => {
     } catch {
       toast.error("Could not send the document.");
       setSending(false);
+      setSendOpen(false);
     }
   };
 
@@ -623,7 +638,11 @@ const FieldEditor = ({ token }: { token: string }) => {
           <Button variant="outline" disabled={saving} onClick={save}>
             {saving ? "Saving..." : "Save"}
           </Button>
-          <Button disabled={sending} onClick={sendNow}>
+          <Button
+            disabled={sending}
+            // signing alone emails nobody, so there is nothing to add
+            onClick={() => (onlyMe ? sendNow() : setSendOpen(true))}
+          >
             {sending
               ? "Working..."
               : onlyMe
@@ -812,6 +831,75 @@ const FieldEditor = ({ token }: { token: string }) => {
                 disabled={signerBusy || !signerForm?.name.trim()}
               >
                 {signerBusy ? "Saving..." : "Save"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </DialogRoot>
+
+      <DialogRoot
+        open={sendOpen}
+        onOpenChange={(e) => {
+          if (sending) return;
+          if (!e.open) setSendOpen(false);
+        }}
+        closeOnEscape={!sending}
+        closeOnInteractOutside={!sending}
+      >
+        <DialogBackdrop />
+        <DialogContent>
+          <DialogTitle>Send for signature</DialogTitle>
+          <DialogDescription>
+            {meSigning
+              ? "The other signers are emailed a link to sign, and you sign here."
+              : "Each signer is emailed a link to sign. Replies to the email come to you."}
+          </DialogDescription>
+          <form
+            className="mt-4 flex flex-col gap-3"
+            onSubmit={(e) => {
+              e.preventDefault();
+              sendNow();
+            }}
+          >
+            <label className="flex flex-col gap-1 text-sm">
+              <span className="font-medium">Message to signers (optional)</span>
+              <textarea
+                className="input min-h-24 py-2"
+                maxLength={MESSAGE_MAX_LENGTH}
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="Add a note that appears in the email"
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-sm">
+              <span className="font-medium">Expires after</span>
+              <select
+                className="input"
+                value={expiryDays}
+                onChange={(e) => setExpiryDays(e.target.value)}
+              >
+                {EXPIRY_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+              <span className="text-muted-foreground text-xs">
+                Signers get a reminder before it expires. After that, the link
+                stops working.
+              </span>
+            </label>
+            <div className="mt-2 flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                disabled={sending}
+                onClick={() => setSendOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={sending}>
+                {sending ? "Sending..." : meSigning ? "Send and sign" : "Send"}
               </Button>
             </div>
           </form>

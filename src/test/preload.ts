@@ -9,6 +9,22 @@ import { mswServer } from "./setup/mswServer";
  * Sets up happy-dom for DOM testing and starts MSW server for API mocking.
  */
 
+// Vite's `?url` imports (e.g. the pdf.js worker) resolve to the asset's URL
+// string; give them the same shape here so modules that use one can load
+Bun.plugin({
+  name: "vite-url-imports",
+  setup(build) {
+    build.onResolve({ filter: /\?url$/ }, (args) => ({
+      path: args.path,
+      namespace: "vite-url",
+    }));
+    build.onLoad({ filter: /.*/, namespace: "vite-url" }, (args) => ({
+      contents: `export default ${JSON.stringify(args.path)};`,
+      loader: "js",
+    }));
+  },
+});
+
 // Register happy-dom globals for React Testing Library. Give the document a
 // real origin so components that fetch same-origin paths (`/api/...`) resolve
 // them in every test file, not only after another file happened to set one

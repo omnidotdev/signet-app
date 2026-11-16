@@ -36,6 +36,7 @@ import {
   isTourField,
 } from "@/lib/signet/fieldCompletion";
 import { DEFAULT_INK } from "@/lib/signet/ink";
+import { formatExpiry } from "@/lib/signet/sendOptions";
 import {
   SIGNATURE_FONT_OPTIONS,
   markFontSizeCqh,
@@ -84,6 +85,12 @@ interface FillData {
   alreadySigned: boolean;
   documentCompleted: boolean;
   waitingFor: string | null;
+  /** why this link can no longer be signed, null while it is open */
+  closed?: "voided" | "expired" | null;
+  /** the sender's note to signers */
+  message?: string | null;
+  /** when the request stops accepting signatures (ISO) */
+  expiresAt?: string | null;
   pdfBase64: string;
   fields: Field[];
 }
@@ -152,7 +159,9 @@ const SignerFill = ({
   const [otpError, setOtpError] = useState<string | null>(null);
   const [otpBusy, setOtpBusy] = useState(false);
   const pdfBytes = usePdfBytes(
-    data && !data.alreadySigned && !data.waitingFor ? data.pdfBase64 : null,
+    data && !data.alreadySigned && !data.waitingFor && !data.closed
+      ? data.pdfBase64
+      : null,
   );
   const { pdf, pages, error: pdfError } = usePdfDocument(pdfBytes);
   const [zoom, setZoom] = useState(1);
@@ -580,6 +589,14 @@ const SignerFill = ({
           if (nextField) focusField(nextField);
           return;
         }
+        // the request closed while this page was open
+        if (err.error === "expired" || err.error === "voided") {
+          setData((d) =>
+            d ? { ...d, closed: err.error as "expired" | "voided" } : d,
+          );
+          setSubmitting(false);
+          return;
+        }
         throw new Error();
       }
       const body = (await res.json().catch(() => ({}))) as {
@@ -767,29 +784,46 @@ const SignerFill = ({
         </h1>
         <p className="mt-2 text-muted-foreground text-sm">
           Thank you. This document has your signature.
+          {!(completedAll || data.documentCompleted) &&
+            " You will be emailed the final copy once everyone has signed."}
         </p>
         <div className="mt-6 flex flex-col items-center justify-center gap-2 sm:flex-row">
           {backHref ? (
             <a href={backHref}>
               <Button className="gap-2">View document</Button>
             </a>
-          ) : (
+          ) : !(completedAll || data.documentCompleted) ? null : (
             <>
               <a href={`${base}/download`}>
                 <Button className="gap-2">
                   <Download className="size-4" /> Download signed PDF
                 </Button>
               </a>
-              {(completedAll || data.documentCompleted) && (
-                <a href={`${base}/certificate`}>
-                  <Button variant="outline" className="gap-2">
-                    <FileCheck className="size-4" /> Certificate of completion
-                  </Button>
-                </a>
-              )}
+              <a href={`${base}/certificate`}>
+                <Button variant="outline" className="gap-2">
+                  <FileCheck className="size-4" /> Certificate of completion
+                </Button>
+              </a>
             </>
           )}
         </div>
+      </div>
+    );
+  }
+
+  if (data.closed) {
+    return (
+      <div className="mx-auto w-full max-w-md px-5 py-16 text-center">
+        <XCircle className="mx-auto size-10 text-muted-foreground" />
+        <h1 className="mt-4 font-semibold text-2xl tracking-tight">
+          {data.closed === "expired"
+            ? "This request has expired"
+            : "This request was canceled"}
+        </h1>
+        <p className="mt-2 text-muted-foreground text-sm">
+          {data.documentName} can no longer be signed here. If you still need to
+          sign it, contact the sender.
+        </p>
       </div>
     );
   }
@@ -817,7 +851,13 @@ const SignerFill = ({
       </h1>
       <p className="mt-1 text-muted-foreground text-sm">
         {data.signerName}, review the document and sign where it is highlighted.
+        {data.expiresAt && ` Please sign by ${formatExpiry(data.expiresAt)}.`}
       </p>
+      {data.message && (
+        <blockquote className="mt-4 max-w-2xl whitespace-pre-line rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm">
+          {data.message}
+        </blockquote>
+      )}
 
       {/* On wide screens the document takes the main column and the signing
           controls stay in view beside it; on narrow ones they stack */}

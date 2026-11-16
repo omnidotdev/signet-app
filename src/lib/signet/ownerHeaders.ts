@@ -53,6 +53,9 @@ export const ownerHeaders = async (
       "x-signet-owner-id": ownerId,
       "x-signet-owner-email": session.user.email ?? "",
     };
+    // URL-encoded: a header value cannot carry most non-ASCII names as is
+    if (session.user.name)
+      out["x-signet-owner-name"] = encodeURIComponent(session.user.name);
     if (personal?.id) out["x-signet-organization-id"] = personal.id;
     return out;
   } catch {

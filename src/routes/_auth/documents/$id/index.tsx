@@ -31,6 +31,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { eventLabel } from "@/lib/signet/eventLabel";
+import { formatExpiry } from "@/lib/signet/sendOptions";
 import { canCorrectSigner } from "@/lib/signet/signerCorrection";
 import createMetaTags from "@/lib/util/createMetaTags";
 
@@ -63,6 +64,10 @@ interface DocumentDetail {
   createdAt: string;
   signingMode: string;
   hasSignedPdf: boolean;
+  /** when an unfinished request stops accepting signatures (ISO) */
+  expiresAt?: string | null;
+  /** the sender's note to signers */
+  message?: string | null;
   signers: DetailSigner[];
   history: HistoryEvent[];
   provenanceValid: boolean;
@@ -77,6 +82,7 @@ const statusTone: Record<string, string> = {
   viewed: "bg-sky-500/10 text-sky-600 dark:text-sky-400",
   draft: "bg-muted text-muted-foreground",
   voided: "bg-destructive/10 text-destructive",
+  expired: "bg-muted text-muted-foreground",
 };
 
 const prettyDateTime = (iso: string) =>
@@ -285,6 +291,9 @@ function DocumentDetailPage() {
           <p className="mt-1 text-muted-foreground text-sm">
             Created {prettyDateTime(data.createdAt)}
             {data.signingMode === "sequential" ? " · signs in order" : ""}
+            {data.status === "sent" && data.expiresAt
+              ? ` · expires ${formatExpiry(data.expiresAt)}`
+              : ""}
             {data.previousVersionId && (
               <>
                 {" · "}
@@ -298,6 +307,12 @@ function DocumentDetailPage() {
               </>
             )}
           </p>
+          {data.message && (
+            <p className="mt-3 max-w-2xl whitespace-pre-line rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm">
+              <span className="text-muted-foreground">Note to signers: </span>
+              {data.message}
+            </p>
+          )}
           {data.nextVersionId && (
             <p className="mt-3 rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm">
               A newer version of this document exists.{" "}
