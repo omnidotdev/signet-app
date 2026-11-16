@@ -44,6 +44,7 @@ const statusTone: Record<string, string> = {
   pending: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
   draft: "bg-muted text-muted-foreground",
   voided: "bg-destructive/10 text-destructive",
+  expired: "bg-muted text-muted-foreground",
 };
 
 const prettyDate = (iso: string) =>

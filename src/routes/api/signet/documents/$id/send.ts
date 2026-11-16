@@ -13,7 +13,12 @@ export const Route = createFileRoute("/api/signet/documents/$id/send")({
       POST: async ({ request, params }) =>
         fetch(`${signetApiUrl()}/api/documents/${params.id}/send`, {
           method: "POST",
-          headers: await ownerHeaders(request.headers),
+          headers: {
+            ...(await ownerHeaders(request.headers)),
+            "content-type": "application/json",
+          },
+          // the sender's note and expiry choice, if any
+          body: (await request.text()) || "{}",
         }),
     },
   },

@@ -9,6 +9,7 @@ const EVENT_LABEL: Record<string, string> = {
   "document.completed": "Completed and sealed",
   "document.declined": "Declined",
   "document.voided": "Voided",
+  "document.expired": "Expired",
   "document.signed": "Signed",
   "document.revised": "Created as a new version",
   "identity.verified": "Identity verified",
