@@ -1,12 +1,8 @@
-import {
-  OMNI_CLAIMS_NAMESPACE,
-  ensureFreshAccessToken,
-} from "@omnidotdev/providers";
+import { ensureFreshAccessToken } from "@omnidotdev/providers";
 import { decodeJwt } from "jose";
 
 import auth from "@/lib/auth/auth";
-
-import type { OrganizationClaim } from "@omnidotdev/providers/auth";
+import { resolveOrganizationClaims } from "@/server/organizationClaims";
 
 const SERVICE_KEY = process.env.SIGNET_SERVICE_KEY;
 
@@ -43,10 +39,12 @@ export const ownerHeaders = async (
     const ownerId = payload.sub;
     if (!ownerId) return {};
 
-    const claims = payload[OMNI_CLAIMS_NAMESPACE];
-    const personal = Array.isArray(claims)
-      ? (claims as OrganizationClaim[]).find((org) => org.type === "personal")
-      : undefined;
+    // Hydrated from userinfo when the token carries workspace ids only
+    const organizations = await resolveOrganizationClaims(
+      payload,
+      tokenResult.accessToken,
+    );
+    const personal = organizations.find((org) => org.type === "personal");
 
     const out: Record<string, string> = {
       "x-signet-service-key": SERVICE_KEY,
