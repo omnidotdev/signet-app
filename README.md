@@ -11,10 +11,8 @@ This is a template repository for a frontend web application powered by [TanStac
   - Protected routes with automatic redirects
   - Server-side authentication middleware
 - 💳 **Payments & Subscriptions**:
-  - [Stripe](https://stripe.com) integration for payment processing
-  - Subscription management with billing portal
   - Pricing pages with tier comparison
-  - Customer portal for subscription updates and cancellations
+  - Plans are bought and managed on the [Omni account hub](https://account.omni.dev) (`VITE_ACCOUNT_URL`): a pricing card's plan action and a workspace's Manage subscription link there and come back to Signet
 - 🎨 **UI/UX**:
   - Modern component library with [Ark UI](https://ark-ui.com) and [shadcn/ui](https://ui.shadcn.com) patterns
   - [Tailwind CSS](https://tailwindcss.com) v4 with optimized class sorting

@@ -1,5 +1,4 @@
 import { Dialog as ArkDialog } from "@ark-ui/react";
-import { X } from "lucide-react";
 
 import cn from "@/lib/utils";
 
@@ -51,22 +50,6 @@ const DialogContent = ({
   </DialogPositioner>
 );
 
-const DialogCloseTrigger = ({
-  className,
-  ...rest
-}: ComponentProps<typeof ArkDialog.CloseTrigger>) => (
-  <ArkDialog.CloseTrigger
-    className={cn(
-      "absolute top-4 right-4 rounded-lg p-1.5 text-muted-foreground opacity-70 transition-all hover:bg-accent hover:text-accent-foreground hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground",
-      className,
-    )}
-    {...rest}
-  >
-    <X className="size-4" />
-    <span className="sr-only">Close</span>
-  </ArkDialog.CloseTrigger>
-);
-
 const DialogTitle = ({
   className,
   ...rest
@@ -95,7 +78,6 @@ export {
   DialogBackdrop,
   DialogPositioner,
   DialogContent,
-  DialogCloseTrigger,
   DialogTitle,
   DialogDescription,
 };

@@ -297,7 +297,7 @@
   }
 }
 
-/* Signet: lightweight input utility matching the ui/input component */
+/* Signet: lightweight input utility */
 .input {
   display: flex;
   height: 2.25rem;

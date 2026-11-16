@@ -1,33 +1,39 @@
-import { Button } from "@omnidotdev/thornberry/button";
-import { useMutation } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
-import { EditIcon } from "lucide-react";
+import { SettingsIcon } from "lucide-react";
+import { useEffect, useState } from "react";
 
-import { getBillingPortalUrl } from "@/server/functions/subscriptions";
+import { manageSubscriptionUrl, resolveBaseUrl } from "@/lib/billing/hubLinks";
+import { ACCOUNT_URL, BASE_URL } from "@/lib/config/env.config";
 
 interface Props {
-  entityType: string;
-  entityId: string;
+  /** Workspace whose subscription to manage */
+  workspaceSlug: string;
 }
 
 /**
- * Manage subscription via billing portal.
+ * Manage a workspace's subscription (change or cancel the plan, payment
+ * method, invoices) on the Omni account hub, which opens the billing portal
+ * and returns to this workspace's billing page. Hidden when no account hub is
+ * configured
  */
-const ManageSubscription = ({ entityType, entityId }: Props) => {
-  const navigate = useNavigate();
+const ManageSubscription = ({ workspaceSlug }: Props) => {
+  // Resolve the return origin after mount so the server and first client
+  // render agree, since production builds with an empty base URL
+  const [baseUrl, setBaseUrl] = useState<string>();
 
-  const { mutateAsync: manageSubscription } = useMutation({
-    mutationFn: async () =>
-      await getBillingPortalUrl({
-        data: { entityType, entityId },
-      }),
-    onSuccess: (url) => navigate({ href: url, reloadDocument: true }),
-  });
+  useEffect(() => setBaseUrl(resolveBaseUrl(BASE_URL)), []);
+
+  const href = manageSubscriptionUrl(ACCOUNT_URL, baseUrl, workspaceSlug);
+
+  if (!href) return null;
 
   return (
-    <Button variant="ghost" size="icon" onClick={() => manageSubscription()}>
-      <EditIcon className="text-blue-500" />
-    </Button>
+    <a
+      href={href}
+      className="inline-flex items-center rounded-lg border px-4 py-2 text-sm hover:bg-muted"
+    >
+      <SettingsIcon className="mr-2 h-4 w-4" />
+      Manage subscription
+    </a>
   );
 };
 

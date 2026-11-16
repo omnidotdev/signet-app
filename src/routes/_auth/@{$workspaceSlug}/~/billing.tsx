@@ -1,22 +1,36 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 
+import { ManageSubscription } from "@/components/profile";
 import { useWorkspace } from "@/lib/context";
+import { getOrganizationBySlug } from "@/server/functions/organizations";
+import { getSubscription } from "@/server/functions/subscriptions";
 
 export const Route = createFileRoute("/_auth/@{$workspaceSlug}/~/billing")({
+  loader: async ({ params }) => {
+    const organization = await getOrganizationBySlug({
+      data: { slug: params.workspaceSlug },
+    }).catch(() => null);
+
+    if (!organization?.id) return { subscription: null };
+
+    // The live subscription decides whether there is a plan to manage
+    const subscription = await getSubscription({
+      data: { organizationId: organization.id },
+    }).catch(() => null);
+
+    return { subscription };
+  },
   component: WorkspaceBillingPage,
 });
 
 /**
- * Workspace billing page.
- * Placeholder for Aether integration.
- *
- * In production, this would integrate with:
- * - Aether for entitlements and subscription management
- * - Stripe for payment processing
+ * Workspace billing page. Buying, changing, and canceling the plan happen on
+ * the Omni account hub, which returns here
  */
 function WorkspaceBillingPage() {
   const { workspaceSlug } = Route.useParams();
   const { workspaces } = useWorkspace();
+  const { subscription } = Route.useLoaderData();
 
   const org = workspaces.find((o) => o.slug === workspaceSlug);
 
@@ -37,12 +51,16 @@ function WorkspaceBillingPage() {
                 Basic features for personal use
               </p>
             </div>
-            <Link
-              to="/pricing"
-              className="rounded-lg bg-primary px-4 py-2 text-primary-foreground hover:bg-primary/90"
-            >
-              Upgrade Plan
-            </Link>
+            {subscription ? (
+              <ManageSubscription workspaceSlug={org.slug} />
+            ) : (
+              <Link
+                to="/pricing"
+                className="rounded-lg bg-primary px-4 py-2 text-primary-foreground hover:bg-primary/90"
+              >
+                Upgrade Plan
+              </Link>
+            )}
           </div>
         </section>
 
@@ -64,12 +82,8 @@ function WorkspaceBillingPage() {
           </p>
           <ol className="mt-2 list-inside list-decimal space-y-1 text-muted-foreground text-sm">
             <li>Configure Aether for entitlement management</li>
-            <li>Set up Stripe for payment processing</li>
             <li>
-              Implement subscription server functions in{" "}
-              <code className="rounded bg-muted px-1">
-                server/functions/subscriptions.ts
-              </code>
+              Set up plans, which are bought and managed on the Omni account hub
             </li>
           </ol>
         </section>
