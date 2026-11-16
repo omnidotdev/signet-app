@@ -1,8 +1,10 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 
 import { ManageSubscription } from "@/components/profile";
+import { hasPaidPlans } from "@/lib/billing/paidPlans";
 import { useWorkspace } from "@/lib/context";
 import { getOrganizationBySlug } from "@/server/functions/organizations";
+import { getPrices } from "@/server/functions/prices";
 import { getSubscription } from "@/server/functions/subscriptions";
 
 export const Route = createFileRoute("/_auth/@{$workspaceSlug}/~/billing")({
@@ -11,14 +13,19 @@ export const Route = createFileRoute("/_auth/@{$workspaceSlug}/~/billing")({
       data: { slug: params.workspaceSlug },
     }).catch(() => null);
 
-    if (!organization?.id) return { subscription: null };
+    if (!organization?.id) return { subscription: null, canUpgrade: false };
 
-    // The live subscription decides whether there is a plan to manage
-    const subscription = await getSubscription({
-      data: { organizationId: organization.id },
-    }).catch(() => null);
+    // The live subscription decides whether there is a plan to manage, and the
+    // same price list the pricing page reads decides whether there is a paid
+    // plan to upgrade to
+    const [subscription, prices] = await Promise.all([
+      getSubscription({ data: { organizationId: organization.id } }).catch(
+        () => null,
+      ),
+      getPrices().catch(() => []),
+    ]);
 
-    return { subscription };
+    return { subscription, canUpgrade: hasPaidPlans(prices) };
   },
   component: WorkspaceBillingPage,
 });
@@ -30,7 +37,7 @@ export const Route = createFileRoute("/_auth/@{$workspaceSlug}/~/billing")({
 function WorkspaceBillingPage() {
   const { workspaceSlug } = Route.useParams();
   const { workspaces } = useWorkspace();
-  const { subscription } = Route.useLoaderData();
+  const { subscription, canUpgrade } = Route.useLoaderData();
 
   const org = workspaces.find((o) => o.slug === workspaceSlug);
 
@@ -54,12 +61,14 @@ function WorkspaceBillingPage() {
             {subscription ? (
               <ManageSubscription workspaceSlug={org.slug} />
             ) : (
-              <Link
-                to="/pricing"
-                className="rounded-lg bg-primary px-4 py-2 text-primary-foreground hover:bg-primary/90"
-              >
-                Upgrade Plan
-              </Link>
+              canUpgrade && (
+                <Link
+                  to="/pricing"
+                  className="rounded-lg bg-primary px-4 py-2 text-primary-foreground hover:bg-primary/90"
+                >
+                  Upgrade Plan
+                </Link>
+              )
             )}
           </div>
         </section>
