@@ -1,4 +1,5 @@
 import { Button } from "@omnidotdev/thornberry/button";
+import { NativeSelect } from "@omnidotdev/thornberry/native-select";
 import { useNavigate, useRouteContext } from "@tanstack/react-router";
 import {
   CalendarDays,
@@ -535,8 +536,7 @@ const FieldEditor = ({ token }: { token: string }) => {
           {signers.length > 1 && (
             <label className="flex items-center gap-2 text-sm">
               <span className="text-muted-foreground">Signer</span>
-              <select
-                className="input h-9 py-1"
+              <NativeSelect
                 value={
                   (selected &&
                     fields.find((f) => f.key === selected)?.signerId) ||
@@ -550,7 +550,7 @@ const FieldEditor = ({ token }: { token: string }) => {
                     {s.name}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
             </label>
           )}
           {selectedField?.type === "dropdown" && (
@@ -589,8 +589,7 @@ const FieldEditor = ({ token }: { token: string }) => {
           {selectedField?.type === "date" && (
             <label className="flex items-center gap-2 text-sm">
               <span className="text-muted-foreground">Date format</span>
-              <select
-                className="input h-9 py-1"
+              <NativeSelect
                 value={selectedField.dateFormat ?? "iso"}
                 onChange={(e) => setSelectedDateFormat(e.target.value)}
               >
@@ -599,7 +598,7 @@ const FieldEditor = ({ token }: { token: string }) => {
                     {o.label}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
             </label>
           )}
           {selectedField && (
@@ -873,8 +872,8 @@ const FieldEditor = ({ token }: { token: string }) => {
             </label>
             <label className="flex flex-col gap-1 text-sm">
               <span className="font-medium">Expires after</span>
-              <select
-                className="input"
+              <NativeSelect
+                className="w-full"
                 value={expiryDays}
                 onChange={(e) => setExpiryDays(e.target.value)}
               >
@@ -883,7 +882,7 @@ const FieldEditor = ({ token }: { token: string }) => {
                     {o.label}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
               <span className="text-muted-foreground text-xs">
                 Signers get a reminder before it expires. After that, the link
                 stops working.
