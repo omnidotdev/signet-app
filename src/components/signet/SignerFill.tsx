@@ -1,4 +1,5 @@
 import { Button } from "@omnidotdev/thornberry/button";
+import { NativeSelect } from "@omnidotdev/thornberry/native-select";
 import {
   ArrowDown,
   ArrowUp,
@@ -1256,11 +1257,13 @@ const FieldOverlay = ({
   if (field.type === "dropdown") {
     return (
       <div style={style} className={`overflow-hidden rounded border-2 ${ring}`}>
-        <select
+        <NativeSelect
           data-fid={field.id}
           value={textValue}
           onChange={(e) => onText(e.target.value)}
-          className="size-full border-0 bg-transparent px-1 text-slate-800"
+          size="sm"
+          className="size-full"
+          selectClassName="h-full border-0 text-slate-800 shadow-none"
         >
           <option value="">Select...</option>
           {(field.options ?? []).map((o) => (
@@ -1268,7 +1271,7 @@ const FieldOverlay = ({
               {o}
             </option>
           ))}
-        </select>
+        </NativeSelect>
       </div>
     );
   }
