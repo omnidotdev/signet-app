@@ -1,5 +1,15 @@
 # @omnidotdev/signet-app
 
+## 0.8.2
+
+### Patch Changes
+
+- [#93](https://github.com/omnidotdev/signet-app/pull/93) [`65beaf4`](https://github.com/omnidotdev/signet-app/commit/65beaf439d0fcdcfc0316c87a7911b087965e761) Thanks [@coopbri](https://github.com/coopbri)! - Dropdowns now match the rest of the interface.
+
+- [#92](https://github.com/omnidotdev/signet-app/pull/92) [`6fd8ba1`](https://github.com/omnidotdev/signet-app/commit/6fd8ba1d0ef4d28b3f4dbad5de2f0db215b4b895) Thanks [@coopbri](https://github.com/coopbri)! - A failed workspace lookup now logs only the error message instead of the whole error object, by moving to `@omnidotdev/providers` v0.2.0.
+
+- [#89](https://github.com/omnidotdev/signet-app/pull/89) [`60508ca`](https://github.com/omnidotdev/signet-app/commit/60508ca79239fa83615338a86d607be7580b90b0) Thanks [@coopbri](https://github.com/coopbri)! - Fix pages failing to load (HTTP 431) for accounts that belong to many workspaces
+
 ## 0.8.1
 
 ### Patch Changes
