@@ -1,4 +1,5 @@
 import { CommandPalette as CommandPaletteShell } from "@omnidotdev/thornberry/command-palette";
+import { ShortcutsDialog } from "@omnidotdev/thornberry/shortcuts-dialog";
 import {
   GLOBAL_HOTKEYS,
   hotkeyLabel,
@@ -9,10 +10,12 @@ import {
   Building2,
   CreditCard,
   HomeIcon,
+  Keyboard,
   LayoutDashboard,
   MoonStar,
   UserRound,
 } from "lucide-react";
+import { useState } from "react";
 
 import { useTheme } from "@/providers/ThemeProvider";
 
@@ -29,6 +32,8 @@ export interface BuildCommandsParams {
   theme: Theme;
   /** Flip between light and dark. */
   toggleTheme: () => void;
+  /** Open the keyboard shortcuts list. */
+  showShortcuts: () => void;
 }
 
 /**
@@ -42,6 +47,7 @@ export const buildCommands = ({
   isAuthenticated,
   theme,
   toggleTheme,
+  showShortcuts,
 }: BuildCommandsParams): CommandAction[] => [
   {
     id: "home",
@@ -93,6 +99,15 @@ export const buildCommands = ({
     shortcut: hotkeyLabel(GLOBAL_HOTKEYS.toggleTheme),
     onSelect: toggleTheme,
   },
+  {
+    id: "keyboard-shortcuts",
+    label: "Keyboard shortcuts",
+    group: "Preferences",
+    icon: Keyboard,
+    keywords: ["hotkeys", "keys", "help"],
+    shortcut: hotkeyLabel(GLOBAL_HOTKEYS.showShortcuts),
+    onSelect: showShortcuts,
+  },
 ];
 
 /**
@@ -107,6 +122,8 @@ const CommandPalette = () => {
   const { auth } = useRouteContext({ strict: false });
   const { theme, setTheme } = useTheme();
 
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+
   const toggleTheme = () => setTheme(theme === "light" ? "dark" : "light");
 
   // App-wide theme shortcut. react-hotkeys-hook ignores form fields by default,
@@ -118,10 +135,18 @@ const CommandPalette = () => {
     isAuthenticated: Boolean(auth),
     theme,
     toggleTheme,
+    showShortcuts: () => setShortcutsOpen(true),
   });
 
   return (
-    <CommandPaletteShell commands={commands} placeholder="Search actions..." />
+    <>
+      <CommandPaletteShell
+        commands={commands}
+        placeholder="Search actions..."
+      />
+      {/* `?` opens it anywhere; the palette entry opens it too */}
+      <ShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
+    </>
   );
 };
 
