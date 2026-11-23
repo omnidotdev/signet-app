@@ -1,4 +1,14 @@
 import { Button } from "@omnidotdev/thornberry/button";
+import { ConfirmDialog } from "@omnidotdev/thornberry/confirm-dialog";
+import {
+  DialogBackdrop,
+  DialogContent,
+  DialogDescription,
+  DialogPortal,
+  DialogPositioner,
+  DialogRoot,
+  DialogTitle,
+} from "@omnidotdev/thornberry/dialog";
 import { NativeSelect } from "@omnidotdev/thornberry/native-select";
 import { useNavigate, useRouteContext } from "@tanstack/react-router";
 import {
@@ -17,14 +27,6 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
-import ConfirmDialog from "@/components/signet/ConfirmDialog";
-import {
-  DialogBackdrop,
-  DialogContent,
-  DialogDescription,
-  DialogRoot,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { DATE_FORMAT_OPTIONS } from "@/lib/signet/dateFormat";
 import { DEFAULT_INK } from "@/lib/signet/ink";
 import {
@@ -777,63 +779,71 @@ const FieldEditor = ({ token }: { token: string }) => {
         closeOnEscape={!signerBusy}
         closeOnInteractOutside={!signerBusy}
       >
-        <DialogBackdrop />
-        <DialogContent>
-          <DialogTitle>Signer</DialogTitle>
-          <DialogDescription>
-            Name the signer, and optionally add their email so they receive a
-            signing link when you send.
-          </DialogDescription>
-          <form
-            className="mt-4 flex flex-col gap-3"
-            onSubmit={(e) => {
-              e.preventDefault();
-              saveSigner();
-            }}
-          >
-            <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium">Name</span>
-              <input
-                className="input"
-                value={signerForm?.name ?? ""}
-                onChange={(e) =>
-                  setSignerForm((f) => (f ? { ...f, name: e.target.value } : f))
-                }
-                placeholder="Full name"
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium">Email</span>
-              <input
-                className="input"
-                type="email"
-                value={signerForm?.email ?? ""}
-                onChange={(e) =>
-                  setSignerForm((f) =>
-                    f ? { ...f, email: e.target.value } : f,
-                  )
-                }
-                placeholder="name@example.com"
-              />
-            </label>
-            <div className="mt-2 flex justify-end gap-2">
-              <Button
-                type="button"
-                variant="ghost"
-                disabled={signerBusy}
-                onClick={() => setSignerForm(null)}
+        <DialogPortal>
+          <DialogBackdrop />
+          <DialogPositioner>
+            <DialogContent>
+              <div className="flex flex-col gap-1.5">
+                <DialogTitle>Signer</DialogTitle>
+                <DialogDescription>
+                  Name the signer, and optionally add their email so they
+                  receive a signing link when you send.
+                </DialogDescription>
+              </div>
+              <form
+                className="flex flex-col gap-3"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  saveSigner();
+                }}
               >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={signerBusy || !signerForm?.name.trim()}
-              >
-                {signerBusy ? "Saving..." : "Save"}
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
+                <label className="flex flex-col gap-1 text-sm">
+                  <span className="font-medium">Name</span>
+                  <input
+                    className="input"
+                    value={signerForm?.name ?? ""}
+                    onChange={(e) =>
+                      setSignerForm((f) =>
+                        f ? { ...f, name: e.target.value } : f,
+                      )
+                    }
+                    placeholder="Full name"
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-sm">
+                  <span className="font-medium">Email</span>
+                  <input
+                    className="input"
+                    type="email"
+                    value={signerForm?.email ?? ""}
+                    onChange={(e) =>
+                      setSignerForm((f) =>
+                        f ? { ...f, email: e.target.value } : f,
+                      )
+                    }
+                    placeholder="name@example.com"
+                  />
+                </label>
+                <div className="mt-2 flex justify-end gap-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    disabled={signerBusy}
+                    onClick={() => setSignerForm(null)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={signerBusy || !signerForm?.name.trim()}
+                  >
+                    {signerBusy ? "Saving..." : "Save"}
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </DialogPositioner>
+        </DialogPortal>
       </DialogRoot>
 
       <DialogRoot
@@ -845,64 +855,76 @@ const FieldEditor = ({ token }: { token: string }) => {
         closeOnEscape={!sending}
         closeOnInteractOutside={!sending}
       >
-        <DialogBackdrop />
-        <DialogContent>
-          <DialogTitle>Send for signature</DialogTitle>
-          <DialogDescription>
-            {meSigning
-              ? "The other signers are emailed a link to sign, and you sign here."
-              : "Each signer is emailed a link to sign. Replies to the email come to you."}
-          </DialogDescription>
-          <form
-            className="mt-4 flex flex-col gap-3"
-            onSubmit={(e) => {
-              e.preventDefault();
-              sendNow();
-            }}
-          >
-            <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium">Message to signers (optional)</span>
-              <textarea
-                className="input min-h-24 py-2"
-                maxLength={MESSAGE_MAX_LENGTH}
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                placeholder="Add a note that appears in the email"
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium">Expires after</span>
-              <NativeSelect
-                className="w-full"
-                value={expiryDays}
-                onChange={(e) => setExpiryDays(e.target.value)}
+        <DialogPortal>
+          <DialogBackdrop />
+          <DialogPositioner>
+            <DialogContent>
+              <div className="flex flex-col gap-1.5">
+                <DialogTitle>Send for signature</DialogTitle>
+                <DialogDescription>
+                  {meSigning
+                    ? "The other signers are emailed a link to sign, and you sign here."
+                    : "Each signer is emailed a link to sign. Replies to the email come to you."}
+                </DialogDescription>
+              </div>
+              <form
+                className="flex flex-col gap-3"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  sendNow();
+                }}
               >
-                {EXPIRY_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </NativeSelect>
-              <span className="text-muted-foreground text-xs">
-                Signers get a reminder before it expires. After that, the link
-                stops working.
-              </span>
-            </label>
-            <div className="mt-2 flex justify-end gap-2">
-              <Button
-                type="button"
-                variant="ghost"
-                disabled={sending}
-                onClick={() => setSendOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={sending}>
-                {sending ? "Sending..." : meSigning ? "Send and sign" : "Send"}
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
+                <label className="flex flex-col gap-1 text-sm">
+                  <span className="font-medium">
+                    Message to signers (optional)
+                  </span>
+                  <textarea
+                    className="input min-h-24 py-2"
+                    maxLength={MESSAGE_MAX_LENGTH}
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    placeholder="Add a note that appears in the email"
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-sm">
+                  <span className="font-medium">Expires after</span>
+                  <NativeSelect
+                    className="w-full"
+                    value={expiryDays}
+                    onChange={(e) => setExpiryDays(e.target.value)}
+                  >
+                    {EXPIRY_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </NativeSelect>
+                  <span className="text-muted-foreground text-xs">
+                    Signers get a reminder before it expires. After that, the
+                    link stops working.
+                  </span>
+                </label>
+                <div className="mt-2 flex justify-end gap-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    disabled={sending}
+                    onClick={() => setSendOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={sending}>
+                    {sending
+                      ? "Sending..."
+                      : meSigning
+                        ? "Send and sign"
+                        : "Send"}
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </DialogPositioner>
+        </DialogPortal>
       </DialogRoot>
 
       <ConfirmDialog
@@ -913,8 +935,8 @@ const FieldEditor = ({ token }: { token: string }) => {
         title={`Remove ${removeTarget?.name ?? "signer"}?`}
         description="Their fields on this document will be removed too. This cannot be undone."
         confirmLabel="Remove signer"
-        destructive
-        busy={signerBusy}
+        pendingLabel="Removing..."
+        isPending={signerBusy}
         onConfirm={() => {
           if (removeTarget) removeSigner(removeTarget);
         }}

@@ -1,4 +1,13 @@
 import { Button } from "@omnidotdev/thornberry/button";
+import {
+  DialogBackdrop,
+  DialogContent,
+  DialogDescription,
+  DialogPortal,
+  DialogPositioner,
+  DialogRoot,
+  DialogTitle,
+} from "@omnidotdev/thornberry/dialog";
 import { NativeSelect } from "@omnidotdev/thornberry/native-select";
 import {
   ArrowDown,
@@ -22,13 +31,6 @@ import {
   useState,
 } from "react";
 
-import {
-  DialogBackdrop,
-  DialogContent,
-  DialogDescription,
-  DialogRoot,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { formatDate } from "@/lib/signet/dateFormat";
 import {
   guidePlacement,
@@ -1150,36 +1152,42 @@ const SignerFill = ({
         closeOnEscape={!declining}
         closeOnInteractOutside={!declining}
       >
-        <DialogBackdrop />
-        <DialogContent>
-          <DialogTitle>Decline to sign?</DialogTitle>
-          <DialogDescription>
-            This voids the document for everyone, and it can no longer be
-            signed. The sender will be notified.
-          </DialogDescription>
-          <textarea
-            className="input mt-3 min-h-20"
-            value={declineReason}
-            onChange={(e) => setDeclineReason(e.target.value)}
-            placeholder="Reason (optional)"
-          />
-          <div className="mt-4 flex justify-end gap-2">
-            <Button
-              variant="ghost"
-              disabled={declining}
-              onClick={() => setDeclineOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              disabled={declining}
-              onClick={decline}
-            >
-              {declining ? "Declining..." : "Decline to sign"}
-            </Button>
-          </div>
-        </DialogContent>
+        <DialogPortal>
+          <DialogBackdrop />
+          <DialogPositioner>
+            <DialogContent>
+              <div className="flex flex-col gap-1.5">
+                <DialogTitle>Decline to sign?</DialogTitle>
+                <DialogDescription>
+                  This voids the document for everyone, and it can no longer be
+                  signed. The sender will be notified.
+                </DialogDescription>
+              </div>
+              <textarea
+                className="input min-h-20"
+                value={declineReason}
+                onChange={(e) => setDeclineReason(e.target.value)}
+                placeholder="Reason (optional)"
+              />
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="ghost"
+                  disabled={declining}
+                  onClick={() => setDeclineOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  disabled={declining}
+                  onClick={decline}
+                >
+                  {declining ? "Declining..." : "Decline to sign"}
+                </Button>
+              </div>
+            </DialogContent>
+          </DialogPositioner>
+        </DialogPortal>
       </DialogRoot>
     </div>
   );

@@ -1,4 +1,5 @@
 import { Button } from "@omnidotdev/thornberry/button";
+import { ConfirmDialog } from "@omnidotdev/thornberry/confirm-dialog";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import {
@@ -13,7 +14,6 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 
-import ConfirmDialog from "@/components/signet/ConfirmDialog";
 import TemplatesSection from "@/components/signet/TemplatesSection";
 import UploadCard from "@/components/signet/UploadCard";
 import createMetaTags from "@/lib/util/createMetaTags";
@@ -307,8 +307,8 @@ function DocumentsPage() {
         title={toDelete ? `Delete "${toDelete.name}"?` : "Delete document?"}
         description="This permanently removes the document, its signatures, and its provenance record. This cannot be undone."
         confirmLabel="Delete"
-        destructive
-        busy={deleteMutation.isPending}
+        pendingLabel="Deleting..."
+        isPending={deleteMutation.isPending}
         onConfirm={() => toDelete && deleteMutation.mutate(toDelete.id)}
       />
     </div>

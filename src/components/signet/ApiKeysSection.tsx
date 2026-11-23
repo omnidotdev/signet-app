@@ -1,10 +1,9 @@
 import { Button } from "@omnidotdev/thornberry/button";
+import { ConfirmDialog } from "@omnidotdev/thornberry/confirm-dialog";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Copy, KeyRound } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-
-import ConfirmDialog from "@/components/signet/ConfirmDialog";
 
 interface ApiKeySummary {
   id: string;
@@ -192,8 +191,8 @@ const ApiKeysSection = () => {
         title={`Revoke API key "${revoking?.name ?? ""}"?`}
         description="Anything using this key stops working immediately. This cannot be undone."
         confirmLabel="Revoke key"
-        destructive
-        busy={revoke.isPending}
+        pendingLabel="Revoking..."
+        isPending={revoke.isPending}
         onConfirm={() => revoking && revoke.mutate(revoking.id)}
       />
     </div>

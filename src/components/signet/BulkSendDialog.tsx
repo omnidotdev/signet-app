@@ -1,15 +1,17 @@
 import { Button } from "@omnidotdev/thornberry/button";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
-import { toast } from "sonner";
-
 import {
   DialogBackdrop,
   DialogContent,
   DialogDescription,
+  DialogPortal,
+  DialogPositioner,
   DialogRoot,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@omnidotdev/thornberry/dialog";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import { toast } from "sonner";
+
 import { parseBulkCsv } from "@/lib/signet/bulkCsv";
 
 /** Matches the API's per-request cap */
@@ -88,77 +90,95 @@ const BulkSendDialog = ({ template, onClose }: Props) => {
       closeOnEscape={!send.isPending}
       closeOnInteractOutside={!send.isPending}
     >
-      <DialogBackdrop />
-      <DialogContent>
-        <DialogTitle>Bulk send "{template?.name}"</DialogTitle>
-        <DialogDescription>
-          Each line becomes its own document, sent for signature right away.
-          List a name and email for every signer, in this order: {columns}.
-        </DialogDescription>
+      <DialogPortal>
+        <DialogBackdrop />
+        <DialogPositioner>
+          <DialogContent>
+            <div className="flex flex-col gap-1.5">
+              <DialogTitle>Bulk send "{template?.name}"</DialogTitle>
+              <DialogDescription>
+                Each line becomes its own document, sent for signature right
+                away. List a name and email for every signer, in this order:{" "}
+                {columns}.
+              </DialogDescription>
+            </div>
 
-        <textarea
-          className="input mt-3 min-h-36 font-mono text-xs"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder={roles
-            .flatMap((_, i) => [`Name ${i + 1}`, `name${i + 1}@example.com`])
-            .join(",")}
-          aria-label="Recipients CSV"
-        />
-        <label className="mt-2 inline-flex cursor-pointer items-center gap-2 text-primary text-sm hover:underline">
-          Or upload a .csv file
-          <input
-            type="file"
-            accept=".csv,text/csv"
-            className="sr-only"
-            onChange={(e) => onFile(e.target.files?.[0] ?? null)}
-          />
-        </label>
+            <div className="flex flex-col gap-2">
+              <textarea
+                className="input min-h-36 font-mono text-xs"
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                placeholder={roles
+                  .flatMap((_, i) => [
+                    `Name ${i + 1}`,
+                    `name${i + 1}@example.com`,
+                  ])
+                  .join(",")}
+                aria-label="Recipients CSV"
+              />
+              <label className="inline-flex cursor-pointer items-center gap-2 text-primary text-sm hover:underline">
+                Or upload a .csv file
+                <input
+                  type="file"
+                  accept=".csv,text/csv"
+                  className="sr-only"
+                  onChange={(e) => onFile(e.target.files?.[0] ?? null)}
+                />
+              </label>
+            </div>
 
-        <div className="mt-3 space-y-1 text-sm">
-          {parsed.skippedHeader && (
-            <p className="text-muted-foreground">
-              Skipped the first line as a header: "{parsed.skippedHeader}"
-            </p>
-          )}
-          {parsed.rows.length > 0 && parsed.errors.length === 0 && !tooMany && (
-            <p>
-              {parsed.rows.length} document
-              {parsed.rows.length === 1 ? "" : "s"} ready to send.
-            </p>
-          )}
-          {tooMany && (
-            <p className="text-destructive">
-              Up to {BULK_SEND_MAX} documents per batch; this has{" "}
-              {parsed.rows.length}. Split it into smaller batches.
-            </p>
-          )}
-          {parsed.errors.slice(0, 5).map((e) => (
-            <p key={e.line} className="text-destructive">
-              Line {e.line}: {e.message}
-            </p>
-          ))}
-          {parsed.errors.length > 5 && (
-            <p className="text-destructive">
-              And {parsed.errors.length - 5} more line
-              {parsed.errors.length - 5 === 1 ? "" : "s"} to fix.
-            </p>
-          )}
-        </div>
+            <div className="space-y-1 text-sm">
+              {parsed.skippedHeader && (
+                <p className="text-muted-foreground">
+                  Skipped the first line as a header: "{parsed.skippedHeader}"
+                </p>
+              )}
+              {parsed.rows.length > 0 &&
+                parsed.errors.length === 0 &&
+                !tooMany && (
+                  <p>
+                    {parsed.rows.length} document
+                    {parsed.rows.length === 1 ? "" : "s"} ready to send.
+                  </p>
+                )}
+              {tooMany && (
+                <p className="text-destructive">
+                  Up to {BULK_SEND_MAX} documents per batch; this has{" "}
+                  {parsed.rows.length}. Split it into smaller batches.
+                </p>
+              )}
+              {parsed.errors.slice(0, 5).map((e) => (
+                <p key={e.line} className="text-destructive">
+                  Line {e.line}: {e.message}
+                </p>
+              ))}
+              {parsed.errors.length > 5 && (
+                <p className="text-destructive">
+                  And {parsed.errors.length - 5} more line
+                  {parsed.errors.length - 5 === 1 ? "" : "s"} to fix.
+                </p>
+              )}
+            </div>
 
-        <div className="mt-5 flex justify-end gap-2">
-          <Button variant="ghost" disabled={send.isPending} onClick={onClose}>
-            Cancel
-          </Button>
-          <Button disabled={!canSend} onClick={() => send.mutate()}>
-            {send.isPending
-              ? "Sending..."
-              : parsed.rows.length > 0
-                ? `Send ${parsed.rows.length} document${parsed.rows.length === 1 ? "" : "s"}`
-                : "Send"}
-          </Button>
-        </div>
-      </DialogContent>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="ghost"
+                disabled={send.isPending}
+                onClick={onClose}
+              >
+                Cancel
+              </Button>
+              <Button disabled={!canSend} onClick={() => send.mutate()}>
+                {send.isPending
+                  ? "Sending..."
+                  : parsed.rows.length > 0
+                    ? `Send ${parsed.rows.length} document${parsed.rows.length === 1 ? "" : "s"}`
+                    : "Send"}
+              </Button>
+            </div>
+          </DialogContent>
+        </DialogPositioner>
+      </DialogPortal>
     </DialogRoot>
   );
 };
