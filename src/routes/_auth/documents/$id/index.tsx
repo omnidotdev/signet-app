@@ -1,4 +1,14 @@
 import { Button } from "@omnidotdev/thornberry/button";
+import { ConfirmDialog } from "@omnidotdev/thornberry/confirm-dialog";
+import {
+  DialogBackdrop,
+  DialogContent,
+  DialogDescription,
+  DialogPortal,
+  DialogPositioner,
+  DialogRoot,
+  DialogTitle,
+} from "@omnidotdev/thornberry/dialog";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, createFileRoute, useRouteContext } from "@tanstack/react-router";
 import {
@@ -20,16 +30,8 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 
-import ConfirmDialog from "@/components/signet/ConfirmDialog";
 import NewVersionAction from "@/components/signet/NewVersionAction";
 import PdfViewer from "@/components/signet/PdfViewer";
-import {
-  DialogBackdrop,
-  DialogContent,
-  DialogDescription,
-  DialogRoot,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { eventLabel } from "@/lib/signet/eventLabel";
 import { formatExpiry } from "@/lib/signet/sendOptions";
 import { canCorrectSigner } from "@/lib/signet/signerCorrection";
@@ -556,57 +558,63 @@ function DocumentDetailPage() {
         closeOnEscape={!correctSigner.isPending}
         closeOnInteractOutside={!correctSigner.isPending}
       >
-        <DialogBackdrop />
-        <DialogContent>
-          <DialogTitle>Edit signer</DialogTitle>
-          <DialogDescription>
-            Fix a name, or reassign the email. Changing the email sends a fresh
-            signing link and invalidates the old one.
-          </DialogDescription>
-          <form
-            className="mt-4 flex flex-col gap-3"
-            onSubmit={(e) => {
-              e.preventDefault();
-              submitEdit();
-            }}
-          >
-            <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium">Name</span>
-              <input
-                className="input"
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-                placeholder="Full name"
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium">Email</span>
-              <input
-                className="input"
-                type="email"
-                value={editEmail}
-                onChange={(e) => setEditEmail(e.target.value)}
-                placeholder="name@example.com"
-              />
-            </label>
-            <div className="mt-2 flex justify-end gap-2">
-              <Button
-                type="button"
-                variant="ghost"
-                disabled={correctSigner.isPending}
-                onClick={() => setEditing(null)}
+        <DialogPortal>
+          <DialogBackdrop />
+          <DialogPositioner>
+            <DialogContent>
+              <div className="flex flex-col gap-1.5">
+                <DialogTitle>Edit signer</DialogTitle>
+                <DialogDescription>
+                  Fix a name, or reassign the email. Changing the email sends a
+                  fresh signing link and invalidates the old one.
+                </DialogDescription>
+              </div>
+              <form
+                className="flex flex-col gap-3"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  submitEdit();
+                }}
               >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={correctSigner.isPending || !editName.trim()}
-              >
-                {correctSigner.isPending ? "Saving..." : "Save changes"}
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
+                <label className="flex flex-col gap-1 text-sm">
+                  <span className="font-medium">Name</span>
+                  <input
+                    className="input"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    placeholder="Full name"
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-sm">
+                  <span className="font-medium">Email</span>
+                  <input
+                    className="input"
+                    type="email"
+                    value={editEmail}
+                    onChange={(e) => setEditEmail(e.target.value)}
+                    placeholder="name@example.com"
+                  />
+                </label>
+                <div className="mt-2 flex justify-end gap-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    disabled={correctSigner.isPending}
+                    onClick={() => setEditing(null)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={correctSigner.isPending || !editName.trim()}
+                  >
+                    {correctSigner.isPending ? "Saving..." : "Save changes"}
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </DialogPositioner>
+        </DialogPortal>
       </DialogRoot>
 
       {/* Add a late signer (approver) to a sent document */}
@@ -619,58 +627,64 @@ function DocumentDetailPage() {
         closeOnEscape={!addSigner.isPending}
         closeOnInteractOutside={!addSigner.isPending}
       >
-        <DialogBackdrop />
-        <DialogContent>
-          <DialogTitle>Add signer</DialogTitle>
-          <DialogDescription>
-            Add another party to this document. They are emailed a signing link
-            and sign after the current signers.
-          </DialogDescription>
-          <form
-            className="mt-4 flex flex-col gap-3"
-            onSubmit={(e) => {
-              e.preventDefault();
-              const name = addName.trim();
-              if (name) addSigner.mutate({ name, email: addEmail.trim() });
-            }}
-          >
-            <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium">Name</span>
-              <input
-                className="input"
-                value={addName}
-                onChange={(e) => setAddName(e.target.value)}
-                placeholder="Full name"
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium">Email</span>
-              <input
-                className="input"
-                type="email"
-                value={addEmail}
-                onChange={(e) => setAddEmail(e.target.value)}
-                placeholder="name@example.com"
-              />
-            </label>
-            <div className="mt-2 flex justify-end gap-2">
-              <Button
-                type="button"
-                variant="ghost"
-                disabled={addSigner.isPending}
-                onClick={() => setAddOpen(false)}
+        <DialogPortal>
+          <DialogBackdrop />
+          <DialogPositioner>
+            <DialogContent>
+              <div className="flex flex-col gap-1.5">
+                <DialogTitle>Add signer</DialogTitle>
+                <DialogDescription>
+                  Add another party to this document. They are emailed a signing
+                  link and sign after the current signers.
+                </DialogDescription>
+              </div>
+              <form
+                className="flex flex-col gap-3"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const name = addName.trim();
+                  if (name) addSigner.mutate({ name, email: addEmail.trim() });
+                }}
               >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={addSigner.isPending || !addName.trim()}
-              >
-                {addSigner.isPending ? "Adding..." : "Add signer"}
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
+                <label className="flex flex-col gap-1 text-sm">
+                  <span className="font-medium">Name</span>
+                  <input
+                    className="input"
+                    value={addName}
+                    onChange={(e) => setAddName(e.target.value)}
+                    placeholder="Full name"
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-sm">
+                  <span className="font-medium">Email</span>
+                  <input
+                    className="input"
+                    type="email"
+                    value={addEmail}
+                    onChange={(e) => setAddEmail(e.target.value)}
+                    placeholder="name@example.com"
+                  />
+                </label>
+                <div className="mt-2 flex justify-end gap-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    disabled={addSigner.isPending}
+                    onClick={() => setAddOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={addSigner.isPending || !addName.trim()}
+                  >
+                    {addSigner.isPending ? "Adding..." : "Add signer"}
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </DialogPositioner>
+        </DialogPortal>
       </DialogRoot>
 
       <ConfirmDialog
@@ -681,8 +695,8 @@ function DocumentDetailPage() {
         title={`Remove ${removeTarget?.name ?? "signer"}?`}
         description="They will be removed from this document and can no longer sign it. This cannot be undone."
         confirmLabel="Remove signer"
-        destructive
-        busy={removeSigner.isPending}
+        pendingLabel="Removing..."
+        isPending={removeSigner.isPending}
         onConfirm={() => {
           if (removeTarget) removeSigner.mutate(removeTarget.id);
         }}

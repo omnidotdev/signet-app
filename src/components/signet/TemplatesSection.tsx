@@ -1,4 +1,12 @@
 import { Button } from "@omnidotdev/thornberry/button";
+import {
+  DialogBackdrop,
+  DialogContent,
+  DialogPortal,
+  DialogPositioner,
+  DialogRoot,
+  DialogTitle,
+} from "@omnidotdev/thornberry/dialog";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { LayoutTemplate, Plus, Send, X } from "lucide-react";
@@ -6,12 +14,6 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import BulkSendDialog from "@/components/signet/BulkSendDialog";
-import {
-  DialogBackdrop,
-  DialogContent,
-  DialogRoot,
-  DialogTitle,
-} from "@/components/ui/dialog";
 
 interface TemplateSummary {
   id: string;
@@ -149,83 +151,93 @@ const TemplatesSection = () => {
         closeOnEscape={!create.isPending}
         closeOnInteractOutside={!create.isPending}
       >
-        <DialogBackdrop />
-        <DialogContent>
-          <DialogTitle>Who is signing?</DialogTitle>
-          <div className="mt-3 space-y-3">
-            {signers.map((s, i) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: rows are positional and reorderable only by add/remove
-              <div key={i} className="flex items-end gap-2">
-                <div className="flex-1">
-                  <p className="mb-1 text-muted-foreground text-xs">
-                    {i < roles.length ? roles[i] : "Additional signer"}
-                  </p>
-                  <div className="grid flex-1 gap-2 sm:grid-cols-2">
-                    <input
-                      className="input"
-                      value={s.name}
-                      onChange={(e) =>
-                        setSigners((prev) =>
-                          prev.map((row, idx) =>
-                            idx === i ? { ...row, name: e.target.value } : row,
-                          ),
-                        )
-                      }
-                      placeholder="Signer name"
-                    />
-                    <input
-                      className="input"
-                      type="email"
-                      value={s.email}
-                      onChange={(e) =>
-                        setSigners((prev) =>
-                          prev.map((row, idx) =>
-                            idx === i ? { ...row, email: e.target.value } : row,
-                          ),
-                        )
-                      }
-                      placeholder="Email (optional)"
-                    />
+        <DialogPortal>
+          <DialogBackdrop />
+          <DialogPositioner>
+            <DialogContent>
+              <DialogTitle>Who is signing?</DialogTitle>
+              <div className="space-y-3">
+                {signers.map((s, i) => (
+                  // biome-ignore lint/suspicious/noArrayIndexKey: rows are positional and reorderable only by add/remove
+                  <div key={i} className="flex items-end gap-2">
+                    <div className="flex-1">
+                      <p className="mb-1 text-muted-foreground text-xs">
+                        {i < roles.length ? roles[i] : "Additional signer"}
+                      </p>
+                      <div className="grid flex-1 gap-2 sm:grid-cols-2">
+                        <input
+                          className="input"
+                          value={s.name}
+                          onChange={(e) =>
+                            setSigners((prev) =>
+                              prev.map((row, idx) =>
+                                idx === i
+                                  ? { ...row, name: e.target.value }
+                                  : row,
+                              ),
+                            )
+                          }
+                          placeholder="Signer name"
+                        />
+                        <input
+                          className="input"
+                          type="email"
+                          value={s.email}
+                          onChange={(e) =>
+                            setSigners((prev) =>
+                              prev.map((row, idx) =>
+                                idx === i
+                                  ? { ...row, email: e.target.value }
+                                  : row,
+                              ),
+                            )
+                          }
+                          placeholder="Email (optional)"
+                        />
+                      </div>
+                    </div>
+                    {i >= roles.length && (
+                      <button
+                        type="button"
+                        aria-label={`Remove signer ${i + 1}`}
+                        onClick={() =>
+                          setSigners((prev) =>
+                            prev.filter((_, idx) => idx !== i),
+                          )
+                        }
+                        className="mb-1.5 inline-flex size-9 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+                      >
+                        <X className="size-4" />
+                      </button>
+                    )}
                   </div>
-                </div>
-                {i >= roles.length && (
-                  <button
-                    type="button"
-                    aria-label={`Remove signer ${i + 1}`}
-                    onClick={() =>
-                      setSigners((prev) => prev.filter((_, idx) => idx !== i))
-                    }
-                    className="mb-1.5 inline-flex size-9 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-                  >
-                    <X className="size-4" />
-                  </button>
-                )}
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setSigners((prev) => [...prev, emptySigner()])}
+                  className="inline-flex items-center gap-1.5 font-medium text-primary text-sm hover:underline"
+                >
+                  <Plus className="size-4" /> Add another signer
+                </button>
               </div>
-            ))}
-            <button
-              type="button"
-              onClick={() => setSigners((prev) => [...prev, emptySigner()])}
-              className="inline-flex items-center gap-1.5 font-medium text-primary text-sm hover:underline"
-            >
-              <Plus className="size-4" /> Add another signer
-            </button>
-          </div>
-          <div className="mt-5 flex justify-end gap-2">
-            <Button
-              variant="ghost"
-              disabled={create.isPending}
-              onClick={() => setUsing(null)}
-            >
-              Cancel
-            </Button>
-            <Button
-              disabled={create.isPending || !rolesFilled}
-              onClick={() => using && create.mutate(using.id)}
-            >
-              {create.isPending ? "Creating..." : "Create draft"}
-            </Button>
-          </div>
-        </DialogContent>
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="ghost"
+                  disabled={create.isPending}
+                  onClick={() => setUsing(null)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  disabled={create.isPending || !rolesFilled}
+                  onClick={() => using && create.mutate(using.id)}
+                >
+                  {create.isPending ? "Creating..." : "Create draft"}
+                </Button>
+              </div>
+            </DialogContent>
+          </DialogPositioner>
+        </DialogPortal>
       </DialogRoot>
 
       <BulkSendDialog

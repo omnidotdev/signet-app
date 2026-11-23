@@ -1,11 +1,11 @@
 import { Button } from "@omnidotdev/thornberry/button";
+import { ConfirmDialog } from "@omnidotdev/thornberry/confirm-dialog";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { FilePlus2 } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 
-import ConfirmDialog from "@/components/signet/ConfirmDialog";
 import {
   ACCEPTED_UPLOAD_ATTR,
   UNSUPPORTED_UPLOAD_MSG,
@@ -113,8 +113,8 @@ const NewVersionAction = ({
         title={`Replace "${documentName}" with a new version?`}
         description="This voids the current request, so no one can keep signing it. The new version starts as a draft with the same signers and fields for you to review and send. Signatures already collected stay in this version's record. This cannot be undone."
         confirmLabel="Void and create new version"
-        destructive
-        busy={upload.isPending}
+        pendingLabel="Creating new version..."
+        isPending={upload.isPending}
         onConfirm={() => pending && upload.mutate(pending)}
       />
     </>

@@ -30,6 +30,7 @@ const params = (
   isAuthenticated: false,
   theme: "light",
   toggleTheme: mock(),
+  showShortcuts: mock(),
   ...overrides,
 });
 
@@ -62,6 +63,18 @@ describe("buildCommands", () => {
 
     toggle?.onSelect();
     expect(toggleTheme).toHaveBeenCalledTimes(1);
+  });
+
+  test("includes a Preferences entry that opens the shortcuts list", () => {
+    const showShortcuts = mock();
+    const entry = buildCommands(params({ showShortcuts })).find(
+      (command) => command.id === "keyboard-shortcuts",
+    );
+
+    expect(entry?.group).toBe("Preferences");
+    expect(entry?.shortcut).toBe("?");
+    entry?.onSelect();
+    expect(showShortcuts).toHaveBeenCalledTimes(1);
   });
 
   test("gates authenticated navigation behind a session", () => {
