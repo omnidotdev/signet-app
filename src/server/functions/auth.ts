@@ -65,12 +65,16 @@ export const fetchSession = createServerFn().handler(async () => {
     }
   }
 
+  // Whitelist the returned fields: the raw session carries the session token
+  // (the httpOnly cookie value), client IP, and user agent
   return {
     session: {
-      ...session,
       accessToken,
       user: {
-        ...session.user,
+        id: session.user.id,
+        name: session.user.name,
+        email: session.user.email,
+        image: session.user.image,
         identityProviderId,
       },
     },

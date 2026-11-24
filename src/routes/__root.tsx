@@ -38,7 +38,20 @@ const fetchSession = createServerFn().handler(async () => {
   // Degrade gracefully: anonymous flows (upload, sign) must render even when
   // auth is unconfigured or the identity provider is unreachable
   try {
-    return await auth.api.getSession({ headers });
+    const session = await auth.api.getSession({ headers });
+
+    if (!session) return null;
+
+    // Whitelist what the client reads: the raw session carries the session
+    // token (the httpOnly cookie value), client IP, and user agent
+    return {
+      user: {
+        id: session.user.id,
+        name: session.user.name,
+        email: session.user.email,
+        image: session.user.image,
+      },
+    };
   } catch {
     return null;
   }
