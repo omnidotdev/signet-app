@@ -1,3 +1,4 @@
+import { redactSessionToken } from "@omnidotdev/providers/auth";
 import { betterAuth } from "better-auth";
 import { genericOAuth } from "better-auth/plugins";
 import { tanstackStartCookies } from "better-auth/tanstack-start";
@@ -74,6 +75,8 @@ const auth = betterAuth({
         },
       ],
     }),
+    // Keep the session token out of get-session, which page scripts can read
+    redactSessionToken(),
     // NB: must be the last plugin in the array
     tanstackStartCookies(),
   ],
