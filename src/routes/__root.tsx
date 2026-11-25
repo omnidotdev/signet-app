@@ -27,6 +27,7 @@ import "@/lib/styles/globals.css";
 import appCss from "@/lib/styles/globals.css?url";
 import createMetaTags from "@/lib/util/createMetaTags";
 import ThemeProvider from "@/providers/ThemeProvider";
+import { fetchSession as fetchUserSession } from "@/server/functions/auth";
 import { getThemeServerFn } from "@/server/functions/theme";
 
 import type { QueryClient } from "@tanstack/react-query";
@@ -79,9 +80,14 @@ export const Route = createRootRouteWithContext<{
   queryClient: QueryClient;
 }>()({
   beforeLoad: async () => {
-    const session = await fetchSession();
+    // The whitelisted session carries the account's subject, which hub links
+    // pass as `loginHint`. Anonymous flows (upload, sign) still render when
+    // auth is unconfigured or the identity provider is unreachable
+    const { session } = await fetchUserSession().catch(() => ({
+      session: null,
+    }));
 
-    return { auth: session };
+    return { auth: session ? { user: session.user } : null };
   },
   head: () => ({
     meta: [

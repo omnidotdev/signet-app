@@ -1,6 +1,7 @@
 import { SettingsIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import useHubLoginHint from "@/lib/auth/useHubLoginHint";
 import { manageSubscriptionUrl, resolveBaseUrl } from "@/lib/billing/hubLinks";
 import { ACCOUNT_URL, BASE_URL } from "@/lib/config/env.config";
 
@@ -22,7 +23,15 @@ const ManageSubscription = ({ workspaceSlug }: Props) => {
 
   useEffect(() => setBaseUrl(resolveBaseUrl(BASE_URL)), []);
 
-  const href = manageSubscriptionUrl(ACCOUNT_URL, baseUrl, workspaceSlug);
+  // The hub opens as the account Signet is signed in as
+  const loginHint = useHubLoginHint();
+
+  const href = manageSubscriptionUrl(
+    ACCOUNT_URL,
+    baseUrl,
+    workspaceSlug,
+    loginHint,
+  );
 
   if (!href) return null;
 
