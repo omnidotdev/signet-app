@@ -1,5 +1,25 @@
 # @omnidotdev/signet-app
 
+## 0.9.0
+
+### Minor Changes
+
+- [#99](https://github.com/omnidotdev/signet-app/pull/99) [`26e1ae9`](https://github.com/omnidotdev/signet-app/commit/26e1ae96d104e2fa5dca5ce91a3af27ded384111) Thanks [@coopbri](https://github.com/coopbri)! - Signing in or out of Omni in another app now carries over here
+
+- [#98](https://github.com/omnidotdev/signet-app/pull/98) [`8c001c0`](https://github.com/omnidotdev/signet-app/commit/8c001c052236cd13c28204620c055e5346f4fdc4) Thanks [@coopbri](https://github.com/coopbri)! - Links from Signet to your Omni account (Upgrade, Manage subscription, New workspace) now open it as the same account you use in Signet, even when another account is signed in on the browser
+
+### Patch Changes
+
+- [#93](https://github.com/omnidotdev/signet-app/pull/93) [`65beaf4`](https://github.com/omnidotdev/signet-app/commit/65beaf439d0fcdcfc0316c87a7911b087965e761) Thanks [@coopbri](https://github.com/coopbri)! - Dropdowns now match the rest of the interface.
+
+- [#92](https://github.com/omnidotdev/signet-app/pull/92) [`6fd8ba1`](https://github.com/omnidotdev/signet-app/commit/6fd8ba1d0ef4d28b3f4dbad5de2f0db215b4b895) Thanks [@coopbri](https://github.com/coopbri)! - A failed workspace lookup now logs only the error message instead of the whole error object, by moving to `@omnidotdev/providers` v0.2.0.
+
+- [#89](https://github.com/omnidotdev/signet-app/pull/89) [`60508ca`](https://github.com/omnidotdev/signet-app/commit/60508ca79239fa83615338a86d607be7580b90b0) Thanks [@coopbri](https://github.com/coopbri)! - Fix pages failing to load (HTTP 431) for accounts that belong to many workspaces
+
+- [#96](https://github.com/omnidotdev/signet-app/pull/96) [`1c79c3a`](https://github.com/omnidotdev/signet-app/commit/1c79c3a6740593b226a74cae3bbc5eb7c8a63bc1) Thanks [@coopbri](https://github.com/coopbri)! - Sign-in session data sent to the browser no longer includes the session token
+
+- [#97](https://github.com/omnidotdev/signet-app/pull/97) [`67da162`](https://github.com/omnidotdev/signet-app/commit/67da162e78ac496a67e3c5bf9ab704ddeb238317) Thanks [@coopbri](https://github.com/coopbri)! - Your sign-in token now stays out of reach of scripts running on the page, so the session read from the browser no longer carries it
+
 ## 0.8.1
 
 ### Patch Changes
