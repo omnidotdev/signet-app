@@ -83,11 +83,12 @@ export const Route = createRootRouteWithContext<{
     // The whitelisted session carries the account's subject, which hub links
     // pass as `loginHint`. Anonymous flows (upload, sign) still render when
     // auth is unconfigured or the identity provider is unreachable
-    const { session } = await fetchUserSession().catch(() => ({
+    const { session, authBaseUrl } = await fetchUserSession().catch(() => ({
       session: null,
+      authBaseUrl: undefined,
     }));
 
-    return { auth: session ? { user: session.user } : null };
+    return { auth: session ? { user: session.user } : null, authBaseUrl };
   },
   head: () => ({
     meta: [
