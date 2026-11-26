@@ -23,7 +23,11 @@ export const fetchSession = createServerFn().handler(async () => {
   const headers = getRequestHeaders();
   const session = await auth.api.getSession({ headers });
 
-  if (!session) return { session: null };
+  // Identity provider base URL, so the browser can check its Omni session
+  // (the client bundle carries no build-time auth config)
+  const authBaseUrl = AUTH_BASE_URL as string | undefined;
+
+  if (!session) return { session: null, authBaseUrl };
 
   // Get access token and identity provider ID for downstream use
   let accessToken: string | undefined;
@@ -61,7 +65,7 @@ export const fetchSession = createServerFn().handler(async () => {
       } catch {
         // Sign-out may fail if session is already corrupt
       }
-      return { session: null };
+      return { session: null, authBaseUrl };
     }
   }
 
@@ -78,6 +82,7 @@ export const fetchSession = createServerFn().handler(async () => {
         identityProviderId,
       },
     },
+    authBaseUrl,
   };
 });
 
